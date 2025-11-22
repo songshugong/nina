@@ -1,4 +1,4 @@
-#region "copyright"
+﻿#region "copyright"
 
 /*
     Copyright © 2016 - 2024 Stefan Berg <isbeorn86+NINA@googlemail.com> and the N.I.N.A. contributors
@@ -42,6 +42,9 @@ namespace NINA.Core.Enum {
         TSX_IMAGELINK,
 
         [Description("LblPinPoint")]
-        PINPONT
+        PINPONT,
+
+        [Description("Astrometry.net (Text Upload)")]
+        ASTROMETRY_TEXT_UPLOAD,
     }
 }

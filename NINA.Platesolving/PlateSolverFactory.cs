@@ -1,4 +1,4 @@
-#region "copyright"
+﻿#region "copyright"
 
 /*
     Copyright © 2016 - 2024 Stefan Berg <isbeorn86+NINA@googlemail.com> and the N.I.N.A. contributors
@@ -55,6 +55,7 @@ namespace NINA.PlateSolving {
         private static IPlateSolver GetPlateSolver(IPlateSolveSettings plateSolveSettings, PlateSolverEnum solver) {
             return solver switch {
                 PlateSolverEnum.ASTROMETRY_NET => new AstrometryPlateSolver(plateSolveSettings.AstrometryURL, plateSolveSettings.AstrometryAPIKey),
+                PlateSolverEnum.ASTROMETRY_TEXT_UPLOAD => new AstrometryTextSolver(plateSolveSettings.AstrometryURL, plateSolveSettings.AstrometryAPIKey),
                 PlateSolverEnum.LOCAL => new LocalPlateSolver(plateSolveSettings.CygwinLocation),
                 PlateSolverEnum.PLATESOLVE2 => new Platesolve2Solver(plateSolveSettings.PS2Location),
                 PlateSolverEnum.PLATESOLVE3 => new Platesolve3Solver(plateSolveSettings.PS3Location),
@@ -62,6 +63,7 @@ namespace NINA.PlateSolving {
                 PlateSolverEnum.TSX_IMAGELINK => new TheSkyXImageLinkSolver(plateSolveSettings.TheSkyXHost, plateSolveSettings.TheSkyXPort),
                 PlateSolverEnum.PINPONT => new Dc3PinPointSolver(plateSolveSettings),
                 _ => new ASTAPSolver(plateSolveSettings.ASTAPLocation),
+
             };
         }
 
@@ -72,6 +74,7 @@ namespace NINA.PlateSolving {
         public static IPlateSolver GetBlindSolver(IPlateSolveSettings plateSolveSettings) {
             var type = plateSolveSettings.BlindSolverType switch {
                 BlindSolverEnum.ASTROMETRY_NET => PlateSolverEnum.ASTROMETRY_NET,
+                BlindSolverEnum.ASTROMETRY_TEXT_UPLOAD => PlateSolverEnum.ASTROMETRY_TEXT_UPLOAD,
                 BlindSolverEnum.LOCAL => PlateSolverEnum.LOCAL,
                 BlindSolverEnum.PLATESOLVE3 => PlateSolverEnum.PLATESOLVE3,
                 BlindSolverEnum.ASPS => PlateSolverEnum.ASPS,
