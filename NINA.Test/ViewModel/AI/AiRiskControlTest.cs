@@ -91,6 +91,8 @@ namespace NINA.Test.ViewModel.AI {
             AiRiskControl.NeedsConfirmation(new AiCommand { Action = "status" }, "status").Should().BeFalse();
             AiRiskControl.NeedsConfirmation(new AiCommand { Action = "slew" }, "slew target").Should().BeTrue();
             AiRiskControl.NeedsConfirmation(new AiCommand { Action = "tracking_off" }, "disable tracking").Should().BeTrue();
+            AiRiskControl.NeedsConfirmation(new AiCommand { Action = "home_mount" }, "home mount").Should().BeTrue();
+            AiRiskControl.NeedsConfirmation(new AiCommand { Action = "dome_follow_on" }, "enable dome follow").Should().BeFalse();
             AiRiskControl.NeedsConfirmation(new AiCommand { Action = "slew" }, "slew #force").Should().BeFalse();
         }
 

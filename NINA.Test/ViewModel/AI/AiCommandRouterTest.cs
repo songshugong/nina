@@ -61,12 +61,21 @@ namespace NINA.Test.ViewModel.AI {
             var sut = new AiCommandRouter();
 
             sut.Route("disconnect all devices").Select(c => c.Action).Should().Contain("disconnect");
+            sut.Route("find mount home now").Select(c => c.Action).Should().Contain("home_mount");
             sut.Route("enable tracking").Select(c => c.Action).Should().Contain("tracking_on");
             sut.Route("disable tracking").Select(c => c.Action).Should().Contain("tracking_off");
             sut.Route("start guiding").Select(c => c.Action).Should().Contain("guide_start");
             sut.Route("stop guiding").Select(c => c.Action).Should().Contain("guide_stop");
             sut.Route("相机制冷").Select(c => c.Action).Should().Contain("cool_camera");
             sut.Route("相机回温").Select(c => c.Action).Should().Contain("warm_camera");
+            sut.Route("open dome shutter").Select(c => c.Action).Should().Contain("dome_open");
+            sut.Route("关闭穹顶").Select(c => c.Action).Should().Contain("dome_close");
+            sut.Route("enable dome follow").Select(c => c.Action).Should().Contain("dome_follow_on");
+            sut.Route("disable dome follow").Select(c => c.Action).Should().Contain("dome_follow_off");
+            sut.Route("park dome").Select(c => c.Action).Should().Contain("dome_park");
+            sut.Route("dome home").Select(c => c.Action).Should().Contain("dome_home");
+            sut.Route("打开平场灯").Select(c => c.Action).Should().Contain("flat_light_on");
+            sut.Route("flat light off").Select(c => c.Action).Should().Contain("flat_light_off");
         }
 
         [Test]
@@ -77,6 +86,19 @@ namespace NINA.Test.ViewModel.AI {
 
             actions.Should().Contain("guide_stop");
             actions.Should().NotContain("stop");
+        }
+
+        [Test]
+        public void Route_DomeSpecificPhrases_ShouldNotTriggerMountParkOrSequenceStop() {
+            var sut = new AiCommandRouter();
+
+            var parkActions = sut.Route("park dome now").Select(c => c.Action).ToList();
+            parkActions.Should().Contain("dome_park");
+            parkActions.Should().NotContain("park");
+
+            var stopActions = sut.Route("stop dome follow").Select(c => c.Action).ToList();
+            stopActions.Should().Contain("dome_follow_off");
+            stopActions.Should().NotContain("stop");
         }
     }
 }

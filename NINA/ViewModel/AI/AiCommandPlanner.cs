@@ -30,6 +30,7 @@ namespace NINA.ViewModel.AI {
             "stop",
             "park",
             "unpark",
+            "home_mount",
             "platesolve",
             "center",
             "slew",
@@ -38,7 +39,15 @@ namespace NINA.ViewModel.AI {
             "guide_start",
             "guide_stop",
             "cool_camera",
-            "warm_camera"
+            "warm_camera",
+            "dome_open",
+            "dome_close",
+            "dome_follow_on",
+            "dome_follow_off",
+            "dome_park",
+            "dome_home",
+            "flat_light_on",
+            "flat_light_off"
         };
 
         private readonly IAiCommandRouter commandRouter;

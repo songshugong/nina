@@ -56,7 +56,8 @@ namespace NINA.ViewModel.AI {
             }
 
             var mentionsGuiding = HasAny(normalized, "guiding", "导星");
-            if (HasAny(normalized, "stop", "停止", "终止", "急停", "cancel sequence") && !mentionsGuiding) {
+            var mentionsDomeFollow = HasAny(normalized, "dome follow", "穹顶跟随");
+            if (HasAny(normalized, "stop", "停止", "终止", "急停", "cancel sequence") && !mentionsGuiding && !mentionsDomeFollow) {
                 AddUnique(commands, actionSet, "stop", text);
             }
 
@@ -65,9 +66,14 @@ namespace NINA.ViewModel.AI {
                 AddUnique(commands, actionSet, "unpark", text);
             }
 
-            var matchesPark = HasAny(normalized, "park", "驻车", "回park位") && !matchesUnpark;
+            var mentionsDome = HasAny(normalized, "dome", "roof", "穹顶", "天顶");
+            var matchesPark = HasAny(normalized, "park", "驻车", "回park位") && !matchesUnpark && !mentionsDome;
             if (matchesPark) {
                 AddUnique(commands, actionSet, "park", text);
+            }
+
+            if (HasAny(normalized, "home mount", "find mount home", "mount home", "赤道仪回零")) {
+                AddUnique(commands, actionSet, "home_mount", text);
             }
 
             if (HasAny(normalized, "platesolve", "plate solve", "板解", "解算")) {
@@ -102,6 +108,38 @@ namespace NINA.ViewModel.AI {
 
             if (HasAny(normalized, "warm camera", "camera warm", "相机升温", "相机回温", "相机回暖")) {
                 AddUnique(commands, actionSet, "warm_camera", text);
+            }
+
+            if (HasAny(normalized, "open dome", "open roof", "dome open", "开穹顶", "开天顶", "打开穹顶", "开顶")) {
+                AddUnique(commands, actionSet, "dome_open", text);
+            }
+
+            if (HasAny(normalized, "close dome", "close roof", "dome close", "关穹顶", "关天顶", "关闭穹顶", "关顶")) {
+                AddUnique(commands, actionSet, "dome_close", text);
+            }
+
+            if (HasAny(normalized, "enable dome follow", "start dome follow", "dome follow on", "开启穹顶跟随", "打开穹顶跟随", "穹顶跟随开启")) {
+                AddUnique(commands, actionSet, "dome_follow_on", text);
+            }
+
+            if (HasAny(normalized, "disable dome follow", "stop dome follow", "dome follow off", "关闭穹顶跟随", "停止穹顶跟随", "穹顶跟随关闭")) {
+                AddUnique(commands, actionSet, "dome_follow_off", text);
+            }
+
+            if (HasAny(normalized, "park dome", "dome park", "穹顶驻车", "穹顶停车")) {
+                AddUnique(commands, actionSet, "dome_park", text);
+            }
+
+            if (HasAny(normalized, "home dome", "dome home", "穹顶回零", "穹顶回家")) {
+                AddUnique(commands, actionSet, "dome_home", text);
+            }
+
+            if (HasAny(normalized, "flat light on", "flat panel on", "开启平场灯", "打开平场灯", "平场灯开")) {
+                AddUnique(commands, actionSet, "flat_light_on", text);
+            }
+
+            if (HasAny(normalized, "flat light off", "flat panel off", "关闭平场灯", "关平场灯", "平场灯关")) {
+                AddUnique(commands, actionSet, "flat_light_off", text);
             }
 
             if (commands.Count == 0) {

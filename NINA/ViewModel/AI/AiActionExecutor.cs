@@ -98,7 +98,7 @@ namespace NINA.ViewModel.AI {
             try {
                 switch (command.Action.ToLowerInvariant()) {
                     case "help":
-                        result = Ok("Supported: connect, disconnect, status, start_sequence, stop, park, unpark, platesolve, center, slew, tracking_on, tracking_off, guide_start, guide_stop, cool_camera, warm_camera. Control: confirm, cancel, pending. JSON example: {\"action\":\"slew\",\"parameters\":{\"ra\":\"5.5\",\"dec\":\"-2.1\",\"ra_unit\":\"hours\",\"confirmed\":\"true\"}}. Slew ranges: ra_unit=hours => ra [0,24); ra_unit=deg => ra [0,360); dec [-90,90]. High-risk actions require confirm/cancel unless overridden; while pending exists, new high-risk actions are ignored.");
+                        result = Ok("Supported: connect, disconnect, status, start_sequence, stop, park, unpark, home_mount, platesolve, center, slew, tracking_on, tracking_off, guide_start, guide_stop, cool_camera, warm_camera, dome_open, dome_close, dome_follow_on, dome_follow_off, dome_park, dome_home, flat_light_on, flat_light_off. Control: confirm, cancel, pending. JSON example: {\"action\":\"slew\",\"parameters\":{\"ra\":\"5.5\",\"dec\":\"-2.1\",\"ra_unit\":\"hours\",\"confirmed\":\"true\"}}. Slew ranges: ra_unit=hours => ra [0,24); ra_unit=deg => ra [0,360); dec [-90,90]. High-risk actions require confirm/cancel unless overridden; while pending exists, new high-risk actions are ignored.");
                         break;
 
                     case "connect":
@@ -152,6 +152,23 @@ namespace NINA.ViewModel.AI {
                         }
                         var unparked = await telescopeMediator.UnparkTelescope(new Progress<ApplicationStatus>(), CancellationToken.None);
                         result = unparked ? Ok("Unpark completed.") : Fail("Unpark failed.");
+                        break;
+
+                    case "home_mount":
+                        if (!telescopeMediator.GetInfo().Connected) {
+                            result = Fail("Mount is not connected.");
+                            break;
+                        }
+                        if (!telescopeMediator.GetInfo().CanFindHome) {
+                            result = Fail("Mount does not support homing.");
+                            break;
+                        }
+                        if (IsSequencerInitializedSafe() && sequenceMediator.IsAdvancedSequenceRunning()) {
+                            result = Fail("Sequence is running. Stop sequence before homing mount.");
+                            break;
+                        }
+                        var homeOk = await telescopeMediator.FindHome(new Progress<ApplicationStatus>(), CancellationToken.None);
+                        result = homeOk ? Ok("Mount homing completed.") : Fail("Mount homing failed.");
                         break;
 
                     case "platesolve":
@@ -268,6 +285,102 @@ namespace NINA.ViewModel.AI {
                         result = warmOk
                             ? Ok($"Camera warming requested for {warmDuration.TotalMinutes:0.#} min.")
                             : Fail("Failed to warm camera.");
+                        break;
+
+                    case "dome_open":
+                        if (!domeMediator.GetInfo().Connected) {
+                            result = Fail("Dome is not connected.");
+                            break;
+                        }
+                        if (!domeMediator.GetInfo().CanSetShutter) {
+                            result = Fail("Dome does not support shutter control.");
+                            break;
+                        }
+                        var domeOpenOk = await domeMediator.OpenShutter(CancellationToken.None);
+                        result = domeOpenOk ? Ok("Dome shutter open requested.") : Fail("Failed to open dome shutter.");
+                        break;
+
+                    case "dome_close":
+                        if (!domeMediator.GetInfo().Connected) {
+                            result = Fail("Dome is not connected.");
+                            break;
+                        }
+                        if (!domeMediator.GetInfo().CanSetShutter) {
+                            result = Fail("Dome does not support shutter control.");
+                            break;
+                        }
+                        var domeCloseOk = await domeMediator.CloseShutter(CancellationToken.None);
+                        result = domeCloseOk ? Ok("Dome shutter close requested.") : Fail("Failed to close dome shutter.");
+                        break;
+
+                    case "dome_follow_on":
+                        if (!domeMediator.GetInfo().Connected) {
+                            result = Fail("Dome is not connected.");
+                            break;
+                        }
+                        var domeFollowOnOk = await domeMediator.EnableFollowing(CancellationToken.None);
+                        result = domeFollowOnOk ? Ok("Dome follow mode enabled.") : Fail("Failed to enable dome follow mode.");
+                        break;
+
+                    case "dome_follow_off":
+                        if (!domeMediator.GetInfo().Connected) {
+                            result = Fail("Dome is not connected.");
+                            break;
+                        }
+                        var domeFollowOffOk = await domeMediator.DisableFollowing(CancellationToken.None);
+                        result = domeFollowOffOk ? Ok("Dome follow mode disabled.") : Fail("Failed to disable dome follow mode.");
+                        break;
+
+                    case "dome_park":
+                        if (!domeMediator.GetInfo().Connected) {
+                            result = Fail("Dome is not connected.");
+                            break;
+                        }
+                        if (!domeMediator.GetInfo().CanPark) {
+                            result = Fail("Dome does not support parking.");
+                            break;
+                        }
+                        var domeParkOk = await domeMediator.Park(CancellationToken.None);
+                        result = domeParkOk ? Ok("Dome park requested.") : Fail("Failed to park dome.");
+                        break;
+
+                    case "dome_home":
+                        if (!domeMediator.GetInfo().Connected) {
+                            result = Fail("Dome is not connected.");
+                            break;
+                        }
+                        if (!domeMediator.GetInfo().CanFindHome) {
+                            result = Fail("Dome does not support homing.");
+                            break;
+                        }
+                        var domeHomeOk = await domeMediator.FindHome(CancellationToken.None);
+                        result = domeHomeOk ? Ok("Dome homing requested.") : Fail("Failed to home dome.");
+                        break;
+
+                    case "flat_light_on":
+                        if (!flatDeviceMediator.GetInfo().Connected) {
+                            result = Fail("Flat panel is not connected.");
+                            break;
+                        }
+                        if (!flatDeviceMediator.GetInfo().SupportsOnOff) {
+                            result = Fail("Flat panel does not support light on/off control.");
+                            break;
+                        }
+                        await flatDeviceMediator.ToggleLight(true, new Progress<ApplicationStatus>(), CancellationToken.None);
+                        result = Ok("Flat panel light turned on.");
+                        break;
+
+                    case "flat_light_off":
+                        if (!flatDeviceMediator.GetInfo().Connected) {
+                            result = Fail("Flat panel is not connected.");
+                            break;
+                        }
+                        if (!flatDeviceMediator.GetInfo().SupportsOnOff) {
+                            result = Fail("Flat panel does not support light on/off control.");
+                            break;
+                        }
+                        await flatDeviceMediator.ToggleLight(false, new Progress<ApplicationStatus>(), CancellationToken.None);
+                        result = Ok("Flat panel light turned off.");
                         break;
 
                     default:

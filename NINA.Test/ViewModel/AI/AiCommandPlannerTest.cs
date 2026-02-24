@@ -60,13 +60,13 @@ namespace NINA.Test.ViewModel.AI {
             var router = new AiCommandRouter();
             var translator = new Mock<IAiPromptTranslator>();
             translator.Setup(t => t.TranslateToCommandJsonAsync(It.IsAny<string>()))
-                      .ReturnsAsync("{\"commands\":[{\"action\":\"guide_start\"},{\"action\":\"warm_camera\"}]}");
+                      .ReturnsAsync("{\"commands\":[{\"action\":\"guide_start\"},{\"action\":\"warm_camera\"},{\"action\":\"dome_close\"}]}");
             var sut = new AiCommandPlanner(router, translator.Object);
 
-            var plan = await sut.PlanAsync("start guiding and warm camera");
+            var plan = await sut.PlanAsync("start guiding, warm camera, and close dome");
 
             plan.Source.Should().Be("llm");
-            plan.Commands.Select(c => c.Action).Should().Equal("guide_start", "warm_camera");
+            plan.Commands.Select(c => c.Action).Should().Equal("guide_start", "warm_camera", "dome_close");
         }
 
         [Test]
