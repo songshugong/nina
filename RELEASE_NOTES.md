@@ -21,6 +21,16 @@ More details at <a href="https://nighttime-imaging.eu/donate/" target="_blank">n
 
 ## Features
 
+### Fork-Specific: AI Assistant Operation Scope Expansion
+- Added new AI actions for broader observatory control:
+  - `home_mount`
+  - `dome_open`, `dome_close`, `dome_follow_on`, `dome_follow_off`, `dome_park`, `dome_home`
+  - `flat_light_on`, `flat_light_off`
+- Expanded AI command routing (EN + ZH keywords), planner allowlist, and OpenAI-compatible translator action whitelist to include the new operations.
+- Added execution guards and capability checks for mount, dome, and flat panel actions (connection and feature support validation).
+- Updated high-risk confirmation policy to include `home_mount`, `dome_open`, `dome_close`, and `dome_park`.
+- Added/updated AI tests for new routing behavior, planner filtering, and risk control coverage.
+
 ### **Device Management**
 - **ASCOM Alpaca Direct Drivers**
     - In case your ASCOM Alpaca specific device has a static IP or doesn't offer Alpaca Discovery a new static entry is available for each device type to pick from where you can specify the address to connect to instead of having to rely on discovery
