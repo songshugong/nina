@@ -18,23 +18,139 @@
     <Grid Margin="6">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <Border
             Margin="0,0,0,6"
+            Padding="8"
+            Background="{StaticResource SecondaryBackgroundBrush}"
+            BorderBrush="{StaticResource BorderBrush}"
+            BorderThickness="1">
+            <StackPanel>
+                <TextBlock FontSize="14" FontWeight="SemiBold" Text="AI Observatory Console" />
+                <TextBlock Margin="0,4,0,0" Opacity="0.85" Text="{Binding ProjectPhase}" TextWrapping="Wrap" />
+                <TextBlock Margin="0,2,0,0" Opacity="0.85" Text="{Binding CapabilitySummary}" TextWrapping="Wrap" />
+
+                <Grid Margin="0,8,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+
+                    <Border
+                        Grid.Column="0"
+                        Margin="0,0,4,0"
+                        Padding="6"
+                        Background="{StaticResource SecondaryBackgroundBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Opacity="0.75" Text="Supported Actions" />
+                            <TextBlock FontSize="18" FontWeight="Bold" Text="{Binding SupportedActionCount}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border
+                        Grid.Column="1"
+                        Margin="4,0,4,0"
+                        Padding="6"
+                        Background="{StaticResource SecondaryBackgroundBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Opacity="0.75" Text="High-Risk Actions" />
+                            <TextBlock FontSize="18" FontWeight="Bold" Text="{Binding HighRiskActionCount}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border
+                        Grid.Column="2"
+                        Margin="4,0,4,0"
+                        Padding="6"
+                        Background="{StaticResource SecondaryBackgroundBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Opacity="0.75" Text="Pending Queue" />
+                            <TextBlock FontSize="18" FontWeight="Bold" Text="{Binding PendingActionCount}" />
+                            <TextBlock
+                                Margin="0,2,0,0"
+                                FontSize="11"
+                                Opacity="0.75"
+                                Text="{Binding PendingSummary}"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border
+                        Grid.Column="3"
+                        Margin="4,0,0,0"
+                        Padding="6"
+                        Background="{StaticResource SecondaryBackgroundBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Opacity="0.75" Text="Last Update" />
+                            <TextBlock FontSize="14" FontWeight="SemiBold" Text="{Binding LastUpdated}" />
+                            <TextBlock
+                                Margin="0,2,0,0"
+                                FontSize="11"
+                                Opacity="0.75"
+                                Text="{Binding LastExecutionSummary}"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <TextBlock Margin="0,6,0,0" FontSize="11" Opacity="0.75" Text="{Binding AuditLogPath}" TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <Border
+            Grid.Row="1"
+            Margin="0,0,0,6"
             Padding="6"
             Background="{StaticResource SecondaryBackgroundBrush}"
             BorderBrush="{StaticResource BorderBrush}"
             BorderThickness="1">
-            <TextBlock
-                Text="Experimental AI panel. This build uses local command routing and execution."
-                TextWrapping="Wrap" />
+            <WrapPanel>
+                <Button
+                    Margin="0,0,6,0"
+                    Command="{Binding RunQuickToolCommand}"
+                    CommandParameter="project_overview"
+                    MinWidth="120">
+                    <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="Project Overview" />
+                </Button>
+                <Button
+                    Margin="0,0,6,0"
+                    Command="{Binding RunQuickToolCommand}"
+                    CommandParameter="status"
+                    MinWidth="90">
+                    <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="Status" />
+                </Button>
+                <Button
+                    Margin="0,0,6,0"
+                    Command="{Binding RunQuickToolCommand}"
+                    CommandParameter="pending"
+                    MinWidth="90">
+                    <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="Pending" />
+                </Button>
+                <Button
+                    Command="{Binding RunQuickToolCommand}"
+                    CommandParameter="help"
+                    MinWidth="90">
+                    <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="Help" />
+                </Button>
+            </WrapPanel>
         </Border>
 
         <ListBox
-            Grid.Row="1"
+            Grid.Row="2"
             Margin="0,0,0,6"
             ItemsSource="{Binding Messages}">
             <ListBox.ItemTemplate>
@@ -44,7 +160,7 @@
             </ListBox.ItemTemplate>
         </ListBox>
 
-        <Grid Grid.Row="2">
+        <Grid Grid.Row="3">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition />
                 <ColumnDefinition Width="Auto" />
