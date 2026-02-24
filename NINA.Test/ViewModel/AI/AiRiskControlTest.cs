@@ -90,6 +90,7 @@ namespace NINA.Test.ViewModel.AI {
         public void NeedsConfirmation_SingleCommand_ShouldRespectRiskRules() {
             AiRiskControl.NeedsConfirmation(new AiCommand { Action = "status" }, "status").Should().BeFalse();
             AiRiskControl.NeedsConfirmation(new AiCommand { Action = "slew" }, "slew target").Should().BeTrue();
+            AiRiskControl.NeedsConfirmation(new AiCommand { Action = "tracking_off" }, "disable tracking").Should().BeTrue();
             AiRiskControl.NeedsConfirmation(new AiCommand { Action = "slew" }, "slew #force").Should().BeFalse();
         }
 

@@ -39,6 +39,10 @@ namespace NINA.ViewModel.AI {
                 AddUnique(commands, actionSet, "connect", text);
             }
 
+            if (HasAny(normalized, "disconnect", "断开", "断连", "disconnect all")) {
+                AddUnique(commands, actionSet, "disconnect", text);
+            }
+
             if (HasAny(normalized, "help", "帮助", "commands", "指令")) {
                 AddUnique(commands, actionSet, "help", text);
             }
@@ -51,7 +55,8 @@ namespace NINA.ViewModel.AI {
                 AddUnique(commands, actionSet, "start_sequence", text);
             }
 
-            if (HasAny(normalized, "stop", "停止", "终止", "急停", "cancel sequence")) {
+            var mentionsGuiding = HasAny(normalized, "guiding", "导星");
+            if (HasAny(normalized, "stop", "停止", "终止", "急停", "cancel sequence") && !mentionsGuiding) {
                 AddUnique(commands, actionSet, "stop", text);
             }
 
@@ -73,6 +78,30 @@ namespace NINA.ViewModel.AI {
                 AddUnique(commands, actionSet, "center", text);
             } else if (HasAny(normalized, "slew", "goto", "转到", "指向")) {
                 AddUnique(commands, actionSet, "slew", text);
+            }
+
+            if (HasAny(normalized, "tracking on", "enable tracking", "开启跟踪", "打开跟踪", "开跟踪")) {
+                AddUnique(commands, actionSet, "tracking_on", text);
+            }
+
+            if (HasAny(normalized, "tracking off", "disable tracking", "关闭跟踪", "关跟踪", "停跟踪")) {
+                AddUnique(commands, actionSet, "tracking_off", text);
+            }
+
+            if (HasAny(normalized, "start guiding", "guide start", "开始导星", "开导星", "启动导星")) {
+                AddUnique(commands, actionSet, "guide_start", text);
+            }
+
+            if (HasAny(normalized, "stop guiding", "guide stop", "停止导星", "停导星", "关闭导星")) {
+                AddUnique(commands, actionSet, "guide_stop", text);
+            }
+
+            if (HasAny(normalized, "cool camera", "camera cool", "相机制冷", "相机降温", "制冷相机")) {
+                AddUnique(commands, actionSet, "cool_camera", text);
+            }
+
+            if (HasAny(normalized, "warm camera", "camera warm", "相机升温", "相机回温", "相机回暖")) {
+                AddUnique(commands, actionSet, "warm_camera", text);
             }
 
             if (commands.Count == 0) {

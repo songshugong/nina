@@ -98,11 +98,15 @@ namespace NINA.ViewModel.AI {
             try {
                 switch (command.Action.ToLowerInvariant()) {
                     case "help":
-                        result = Ok("Supported: connect, status, start_sequence, stop, park, unpark, platesolve, center, slew. Control: confirm, cancel, pending. JSON example: {\"action\":\"slew\",\"parameters\":{\"ra\":\"5.5\",\"dec\":\"-2.1\",\"ra_unit\":\"hours\",\"confirmed\":\"true\"}}. Slew ranges: ra_unit=hours => ra [0,24); ra_unit=deg => ra [0,360); dec [-90,90]. High-risk actions require confirm/cancel unless overridden; while pending exists, new high-risk actions are ignored.");
+                        result = Ok("Supported: connect, disconnect, status, start_sequence, stop, park, unpark, platesolve, center, slew, tracking_on, tracking_off, guide_start, guide_stop, cool_camera, warm_camera. Control: confirm, cancel, pending. JSON example: {\"action\":\"slew\",\"parameters\":{\"ra\":\"5.5\",\"dec\":\"-2.1\",\"ra_unit\":\"hours\",\"confirmed\":\"true\"}}. Slew ranges: ra_unit=hours => ra [0,24); ra_unit=deg => ra [0,360); dec [-90,90]. High-risk actions require confirm/cancel unless overridden; while pending exists, new high-risk actions are ignored.");
                         break;
 
                     case "connect":
                         result = await ConnectAllAsync();
+                        break;
+
+                    case "disconnect":
+                        result = await DisconnectAllAsync();
                         break;
 
                     case "status":
@@ -187,8 +191,87 @@ namespace NINA.ViewModel.AI {
                         result = await ExecuteAsyncCommand(framingAssistantVM.SlewToCoordinatesCommand, "Slew", "Slew to target");
                         break;
 
+                    case "tracking_on":
+                        if (!telescopeMediator.GetInfo().Connected) {
+                            result = Fail("Mount is not connected.");
+                            break;
+                        }
+                        result = telescopeMediator.SetTrackingEnabled(true)
+                            ? Ok("Mount tracking enabled.")
+                            : Fail("Failed to enable mount tracking.");
+                        break;
+
+                    case "tracking_off":
+                        if (!telescopeMediator.GetInfo().Connected) {
+                            result = Fail("Mount is not connected.");
+                            break;
+                        }
+                        result = telescopeMediator.SetTrackingEnabled(false)
+                            ? Ok("Mount tracking disabled.")
+                            : Fail("Failed to disable mount tracking.");
+                        break;
+
+                    case "guide_start":
+                        if (!guiderMediator.GetInfo().Connected) {
+                            result = Fail("Guider is not connected.");
+                            break;
+                        }
+                        var forceCalibration = GetBool(command.Parameters, "force_calibration", false);
+                        var guideStartOk = await guiderMediator.StartGuiding(forceCalibration, new Progress<ApplicationStatus>(), CancellationToken.None);
+                        result = guideStartOk ? Ok("Guiding started.") : Fail("Failed to start guiding.");
+                        break;
+
+                    case "guide_stop":
+                        if (!guiderMediator.GetInfo().Connected) {
+                            result = Fail("Guider is not connected.");
+                            break;
+                        }
+                        var guideStopOk = await guiderMediator.StopGuiding(CancellationToken.None);
+                        result = guideStopOk ? Ok("Guiding stopped.") : Fail("Failed to stop guiding.");
+                        break;
+
+                    case "cool_camera":
+                        if (!cameraMediator.GetInfo().Connected) {
+                            result = Fail("Camera is not connected.");
+                            break;
+                        }
+                        if (!cameraMediator.GetInfo().CanSetTemperature) {
+                            result = Fail("Camera does not support temperature control.");
+                            break;
+                        }
+                        var targetTemperature = GetDouble(command.Parameters, "temperature")
+                            ?? GetDouble(command.Parameters, "temp");
+                        if (!targetTemperature.HasValue) {
+                            result = Fail("cool_camera requires temperature parameter.");
+                            break;
+                        }
+                        var coolDurationMinutes = GetDouble(command.Parameters, "duration_min") ?? 0d;
+                        var coolDuration = TimeSpan.FromMinutes(Math.Max(0d, coolDurationMinutes));
+                        var coolOk = await cameraMediator.CoolCamera(targetTemperature.Value, coolDuration, new Progress<ApplicationStatus>(), CancellationToken.None);
+                        result = coolOk
+                            ? Ok($"Camera cooling requested: target {targetTemperature.Value.ToString(CultureInfo.InvariantCulture)}C, duration {coolDuration.TotalMinutes:0.#} min.")
+                            : Fail("Failed to cool camera.");
+                        break;
+
+                    case "warm_camera":
+                        if (!cameraMediator.GetInfo().Connected) {
+                            result = Fail("Camera is not connected.");
+                            break;
+                        }
+                        if (!cameraMediator.GetInfo().CanSetTemperature) {
+                            result = Fail("Camera does not support temperature control.");
+                            break;
+                        }
+                        var warmDurationMinutes = GetDouble(command.Parameters, "duration_min") ?? 0d;
+                        var warmDuration = TimeSpan.FromMinutes(Math.Max(0d, warmDurationMinutes));
+                        var warmOk = await cameraMediator.WarmCamera(warmDuration, new Progress<ApplicationStatus>(), CancellationToken.None);
+                        result = warmOk
+                            ? Ok($"Camera warming requested for {warmDuration.TotalMinutes:0.#} min.")
+                            : Fail("Failed to warm camera.");
+                        break;
+
                     default:
-                        result = Fail("Unknown action. Try \"help\". Supported: connect, status, start_sequence, stop, park, unpark, platesolve, center, slew.");
+                        result = Fail("Unknown action. Try \"help\".");
                         break;
                 }
             } catch (Exception ex) {
@@ -223,6 +306,29 @@ namespace NINA.ViewModel.AI {
             return Ok($"Connect-all finished. Newly connected: {connected}.");
         }
 
+        private async Task<AiExecutionResult> DisconnectAllAsync() {
+            var failures = new List<string>();
+            var disconnected = 0;
+
+            disconnected += await DisconnectDevice("camera", cameraMediator.GetInfo().Connected, () => cameraMediator.Disconnect(), failures);
+            disconnected += await DisconnectDevice("mount", telescopeMediator.GetInfo().Connected, () => telescopeMediator.Disconnect(), failures);
+            disconnected += await DisconnectDevice("filter wheel", filterWheelMediator.GetInfo().Connected, () => filterWheelMediator.Disconnect(), failures);
+            disconnected += await DisconnectDevice("focuser", focuserMediator.GetInfo().Connected, () => focuserMediator.Disconnect(), failures);
+            disconnected += await DisconnectDevice("rotator", rotatorMediator.GetInfo().Connected, () => rotatorMediator.Disconnect(), failures);
+            disconnected += await DisconnectDevice("flat device", flatDeviceMediator.GetInfo().Connected, () => flatDeviceMediator.Disconnect(), failures);
+            disconnected += await DisconnectDevice("guider", guiderMediator.GetInfo().Connected, () => guiderMediator.Disconnect(), failures);
+            disconnected += await DisconnectDevice("switch hub", switchMediator.GetInfo().Connected, () => switchMediator.Disconnect(), failures);
+            disconnected += await DisconnectDevice("weather", weatherDataMediator.GetInfo().Connected, () => weatherDataMediator.Disconnect(), failures);
+            disconnected += await DisconnectDevice("dome", domeMediator.GetInfo().Connected, () => domeMediator.Disconnect(), failures);
+            disconnected += await DisconnectDevice("safety monitor", safetyMonitorMediator.GetInfo().Connected, () => safetyMonitorMediator.Disconnect(), failures);
+
+            if (failures.Count > 0) {
+                return Fail($"Disconnected {disconnected} devices, failures: {string.Join(", ", failures)}");
+            }
+
+            return Ok($"Disconnect-all finished. Newly disconnected: {disconnected}.");
+        }
+
         private static async Task<int> ConnectDevice(string name, bool alreadyConnected, Func<Task<bool>> connectFunc, IList<string> failures) {
             if (alreadyConnected) {
                 return 0;
@@ -234,6 +340,21 @@ namespace NINA.ViewModel.AI {
                     return 1;
                 }
                 failures.Add(name);
+            } catch {
+                failures.Add(name);
+            }
+
+            return 0;
+        }
+
+        private static async Task<int> DisconnectDevice(string name, bool currentlyConnected, Func<Task> disconnectFunc, IList<string> failures) {
+            if (!currentlyConnected) {
+                return 0;
+            }
+
+            try {
+                await (disconnectFunc?.Invoke() ?? Task.CompletedTask);
+                return 1;
             } catch {
                 failures.Add(name);
             }
@@ -308,6 +429,19 @@ namespace NINA.ViewModel.AI {
             } catch {
                 return false;
             }
+        }
+
+        private static double? GetDouble(IDictionary<string, string> parameters, string key) {
+            if (parameters == null || !parameters.TryGetValue(key, out var raw)) {
+                return null;
+            }
+            if (double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var value)) {
+                return value;
+            }
+            if (double.TryParse(raw, NumberStyles.Float, CultureInfo.CurrentCulture, out value)) {
+                return value;
+            }
+            return null;
         }
 
         private static bool GetBool(IDictionary<string, string> parameters, string key, bool defaultValue) {

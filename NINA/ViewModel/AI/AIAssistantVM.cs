@@ -54,7 +54,7 @@ namespace NINA.ViewModel.AI {
 
             Messages = new ObservableCollection<string>();
             AppendMessage("[system] AI assistant initialized. Planner+executor mode is active.");
-            AppendMessage("[system] Supported: connect, status, start_sequence, stop, park, unpark, platesolve, center, slew.");
+            AppendMessage("[system] Supported: connect, disconnect, status, start_sequence, stop, park, unpark, platesolve, center, slew, tracking_on/off, guide_start/stop, cool_camera, warm_camera.");
             AppendMessage("[system] Input \"help\" to show command hints and JSON examples.");
             AppendMessage("[system] High-risk actions require confirm/cancel (90s window).");
             AppendMessage("[system] Use \"pending\"/\"待确认\" to inspect queued high-risk actions.");

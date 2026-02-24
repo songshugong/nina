@@ -23,6 +23,7 @@ namespace NINA.ViewModel.AI {
     public class AiCommandPlanner : IAiCommandPlanner {
         private static readonly HashSet<string> SupportedActions = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
             "connect",
+            "disconnect",
             "help",
             "status",
             "start_sequence",
@@ -31,7 +32,13 @@ namespace NINA.ViewModel.AI {
             "unpark",
             "platesolve",
             "center",
-            "slew"
+            "slew",
+            "tracking_on",
+            "tracking_off",
+            "guide_start",
+            "guide_stop",
+            "cool_camera",
+            "warm_camera"
         };
 
         private readonly IAiCommandRouter commandRouter;

@@ -31,7 +31,8 @@ namespace NINA.ViewModel.AI {
             "start_sequence",
             "park",
             "unpark",
-            "slew"
+            "slew",
+            "tracking_off"
         };
 
         public static AiControlAction ParseControlAction(string prompt) {
