@@ -42,6 +42,20 @@ namespace NINA.Test.ViewModel.AI {
         }
 
         [Test]
+        public async Task PlanAsync_WhenTranslatorReturnsMixedSupportedAndUnsupported_ShouldKeepOnlySupported() {
+            var router = new AiCommandRouter();
+            var translator = new Mock<IAiPromptTranslator>();
+            translator.Setup(t => t.TranslateToCommandJsonAsync(It.IsAny<string>()))
+                      .ReturnsAsync("{\"commands\":[{\"action\":\"status\"},{\"action\":\"reboot\"}]}");
+            var sut = new AiCommandPlanner(router, translator.Object);
+
+            var plan = await sut.PlanAsync("give me status");
+
+            plan.Source.Should().Be("llm");
+            plan.Commands.Select(c => c.Action).Should().Equal("status");
+        }
+
+        [Test]
         public async Task PlanAsync_WhenTranslatorUnavailable_ShouldFallbackToRules() {
             var router = new AiCommandRouter();
             var translator = new Mock<IAiPromptTranslator>();

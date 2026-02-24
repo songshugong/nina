@@ -21,6 +21,19 @@ using System.Threading.Tasks;
 namespace NINA.ViewModel.AI {
 
     public class AiCommandPlanner : IAiCommandPlanner {
+        private static readonly HashSet<string> SupportedActions = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+            "connect",
+            "help",
+            "status",
+            "start_sequence",
+            "stop",
+            "park",
+            "unpark",
+            "platesolve",
+            "center",
+            "slew"
+        };
+
         private readonly IAiCommandRouter commandRouter;
         private readonly IAiPromptTranslator promptTranslator;
 
@@ -38,8 +51,8 @@ namespace NINA.ViewModel.AI {
             }
 
             if (LooksLikeJson(text)) {
-                var jsonCommands = commandRouter.Route(text);
-                if (HasExecutableCommands(jsonCommands)) {
+                var jsonCommands = FilterSupportedCommands(commandRouter.Route(text), "json");
+                if (jsonCommands.Count > 0) {
                     ApplyMetadata(jsonCommands, text, "json");
                     return new AiCommandPlan {
                         Commands = jsonCommands,
@@ -51,8 +64,8 @@ namespace NINA.ViewModel.AI {
             try {
                 var translatedJson = await promptTranslator.TranslateToCommandJsonAsync(text);
                 if (!string.IsNullOrWhiteSpace(translatedJson)) {
-                    var llmCommands = commandRouter.Route(translatedJson);
-                    if (HasExecutableCommands(llmCommands)) {
+                    var llmCommands = FilterSupportedCommands(commandRouter.Route(translatedJson), "llm");
+                    if (llmCommands.Count > 0) {
                         ApplyMetadata(llmCommands, text, "llm");
                         return new AiCommandPlan {
                             Commands = llmCommands,
@@ -64,7 +77,7 @@ namespace NINA.ViewModel.AI {
                 Logger.Warning($"AI translator failed, falling back to rule-based routing: {ex.Message}");
             }
 
-            var routedCommands = commandRouter.Route(text);
+            var routedCommands = FilterSupportedCommands(commandRouter.Route(text), "rules");
             ApplyMetadata(routedCommands, text, "rules");
             return new AiCommandPlan {
                 Commands = routedCommands,
@@ -77,10 +90,26 @@ namespace NINA.ViewModel.AI {
             return trimmed.StartsWith("{", StringComparison.Ordinal) && trimmed.EndsWith("}", StringComparison.Ordinal);
         }
 
-        private static bool HasExecutableCommands(IList<AiCommand> commands) {
-            return commands != null &&
-                   commands.Count > 0 &&
-                   commands.Any(c => !string.Equals(c.Action, "unknown", StringComparison.OrdinalIgnoreCase));
+        private static IList<AiCommand> FilterSupportedCommands(IList<AiCommand> commands, string source) {
+            var filtered = new List<AiCommand>();
+            if (commands == null || commands.Count == 0) {
+                return filtered;
+            }
+
+            foreach (var command in commands) {
+                if (command == null || string.IsNullOrWhiteSpace(command.Action)) {
+                    continue;
+                }
+
+                if (!SupportedActions.Contains(command.Action)) {
+                    Logger.Warning($"AI planner dropped unsupported action '{command.Action}' from {source}.");
+                    continue;
+                }
+
+                filtered.Add(command);
+            }
+
+            return filtered;
         }
 
         private static void ApplyMetadata(IEnumerable<AiCommand> commands, string rawPrompt, string source) {
