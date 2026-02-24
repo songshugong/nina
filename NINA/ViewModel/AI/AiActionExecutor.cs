@@ -25,7 +25,6 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using NINA.Astrometry;
 
 namespace NINA.ViewModel.AI {
 
@@ -99,7 +98,7 @@ namespace NINA.ViewModel.AI {
             try {
                 switch (command.Action.ToLowerInvariant()) {
                     case "help":
-                        result = Ok("Supported: connect, status, start_sequence, stop, park, unpark, platesolve, center, slew. Control: confirm, cancel, pending. JSON example: {\"action\":\"slew\",\"parameters\":{\"ra\":\"5.5\",\"dec\":\"-2.1\",\"ra_unit\":\"hours\",\"confirmed\":\"true\"}}. High-risk actions require confirm/cancel unless overridden; while pending exists, new high-risk actions are ignored.");
+                        result = Ok("Supported: connect, status, start_sequence, stop, park, unpark, platesolve, center, slew. Control: confirm, cancel, pending. JSON example: {\"action\":\"slew\",\"parameters\":{\"ra\":\"5.5\",\"dec\":\"-2.1\",\"ra_unit\":\"hours\",\"confirmed\":\"true\"}}. Slew ranges: ra_unit=hours => ra [0,24); ra_unit=deg => ra [0,360); dec [-90,90]. High-risk actions require confirm/cancel unless overridden; while pending exists, new high-risk actions are ignored.");
                         break;
 
                     case "connect":
@@ -168,15 +167,20 @@ namespace NINA.ViewModel.AI {
                         break;
 
                     case "slew":
-                        var coords = ParseCoordinates(command.Parameters);
-                        if (coords != null) {
+                        if (AiCoordinateParser.HasCoordinateParameters(command.Parameters)) {
+                            if (!AiCoordinateParser.TryParse(command.Parameters, out var parsedCoordinates, out var coordinateError)) {
+                                result = Fail(coordinateError);
+                                break;
+                            }
+
                             if (!telescopeMediator.GetInfo().Connected) {
                                 result = Fail("Mount is not connected.");
                                 break;
                             }
-                            var slewOk = await telescopeMediator.SlewToCoordinatesAsync(coords, CancellationToken.None);
+
+                            var slewOk = await telescopeMediator.SlewToCoordinatesAsync(parsedCoordinates, CancellationToken.None);
                             result = slewOk
-                                ? Ok($"Slew requested to RA {coords.RAString}, Dec {coords.DecString}.")
+                                ? Ok($"Slew requested to RA {parsedCoordinates.RAString}, Dec {parsedCoordinates.DecString}.")
                                 : Fail("Slew failed.");
                             break;
                         }
@@ -298,48 +302,12 @@ namespace NINA.ViewModel.AI {
                    $"Shutter={dome.ShutterStatus}, SeqRunning={seqRunning}";
         }
 
-        private static Coordinates ParseCoordinates(IDictionary<string, string> parameters) {
-            if (parameters == null || parameters.Count == 0) {
-                return null;
-            }
-
-            var ra = GetDouble(parameters, "ra");
-            var dec = GetDouble(parameters, "dec");
-            if (!ra.HasValue || !dec.HasValue) {
-                return null;
-            }
-
-            var raUnit = GetString(parameters, "ra_unit")?.ToLowerInvariant();
-            var raType = raUnit == "deg" || raUnit == "degree" || raUnit == "degrees"
-                ? Coordinates.RAType.Degrees
-                : Coordinates.RAType.Hours;
-
-            return new Coordinates(ra.Value, dec.Value, Epoch.J2000, raType);
-        }
-
-        private static string GetString(IDictionary<string, string> parameters, string key) {
-            return parameters.TryGetValue(key, out var value) ? value : null;
-        }
-
         private bool IsSequencerInitializedSafe() {
             try {
                 return sequenceMediator.Initialized;
             } catch {
                 return false;
             }
-        }
-
-        private static double? GetDouble(IDictionary<string, string> parameters, string key) {
-            if (!parameters.TryGetValue(key, out var raw)) {
-                return null;
-            }
-            if (double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var value)) {
-                return value;
-            }
-            if (double.TryParse(raw, NumberStyles.Float, CultureInfo.CurrentCulture, out value)) {
-                return value;
-            }
-            return null;
         }
 
         private static bool GetBool(IDictionary<string, string> parameters, string key, bool defaultValue) {
