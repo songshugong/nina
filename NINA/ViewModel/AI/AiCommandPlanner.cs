@@ -58,7 +58,7 @@ namespace NINA.ViewModel.AI {
             this.promptTranslator = promptTranslator;
         }
 
-        public async Task<AiCommandPlan> PlanAsync(string prompt) {
+        public async Task<AiCommandPlan> PlanAsync(string prompt, string runtimeContext = null) {
             var text = prompt?.Trim() ?? string.Empty;
             if (string.IsNullOrWhiteSpace(text)) {
                 return new AiCommandPlan {
@@ -78,7 +78,7 @@ namespace NINA.ViewModel.AI {
             }
 
             try {
-                var translatedJson = await promptTranslator.TranslateToCommandJsonAsync(text);
+                var translatedJson = await promptTranslator.TranslateToCommandJsonAsync(text, runtimeContext);
                 if (!string.IsNullOrWhiteSpace(translatedJson)) {
                     var llmCommands = FilterSupportedCommands(commandRouter.Route(translatedJson), "llm");
                     if (llmCommands.Count > 0) {

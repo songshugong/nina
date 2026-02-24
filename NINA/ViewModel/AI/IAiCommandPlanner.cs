@@ -17,6 +17,6 @@ using System.Threading.Tasks;
 namespace NINA.ViewModel.AI {
 
     public interface IAiCommandPlanner {
-        Task<AiCommandPlan> PlanAsync(string prompt);
+        Task<AiCommandPlan> PlanAsync(string prompt, string runtimeContext = null);
     }
 }

@@ -12,11 +12,9 @@
 
 #endregion "copyright"
 
-using System.Threading.Tasks;
-
 namespace NINA.ViewModel.AI {
 
-    public interface IAiPromptTranslator {
-        Task<string> TranslateToCommandJsonAsync(string prompt, string runtimeContext = null);
+    public interface IAiRuntimeContextProvider {
+        string GetRuntimeContextSummary();
     }
 }

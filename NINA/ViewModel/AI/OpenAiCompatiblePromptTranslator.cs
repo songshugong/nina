@@ -40,7 +40,7 @@ namespace NINA.ViewModel.AI {
             "For slew use parameters ra, dec, optional ra_unit (hours|deg). " +
             "Never include markdown or explanations.";
 
-        public async Task<string> TranslateToCommandJsonAsync(string prompt) {
+        public async Task<string> TranslateToCommandJsonAsync(string prompt, string runtimeContext = null) {
             var settings = ReadSettings();
             if (settings == null || string.IsNullOrWhiteSpace(prompt)) {
                 return null;
@@ -50,7 +50,7 @@ namespace NINA.ViewModel.AI {
                 using var httpClient = new HttpClient {
                     Timeout = settings.Timeout
                 };
-                using var request = BuildRequest(settings, prompt);
+                using var request = BuildRequest(settings, prompt, runtimeContext);
 
                 using var response = await httpClient.SendAsync(request);
                 var body = await response.Content.ReadAsStringAsync();
@@ -66,20 +66,30 @@ namespace NINA.ViewModel.AI {
             }
         }
 
-        private static HttpRequestMessage BuildRequest(AiApiSettings settings, string prompt) {
+        private static HttpRequestMessage BuildRequest(AiApiSettings settings, string prompt, string runtimeContext) {
+            var messages = new JArray {
+                new JObject {
+                    ["role"] = "system",
+                    ["content"] = SystemInstruction
+                }
+            };
+
+            if (!string.IsNullOrWhiteSpace(runtimeContext)) {
+                messages.Add(new JObject {
+                    ["role"] = "system",
+                    ["content"] = "Runtime equipment context (real-time):\n" + runtimeContext + "\nPrefer commands that match this context and avoid impossible or unsupported operations."
+                });
+            }
+
+            messages.Add(new JObject {
+                ["role"] = "user",
+                ["content"] = prompt
+            });
+
             var payload = new JObject {
                 ["model"] = settings.Model,
                 ["temperature"] = 0,
-                ["messages"] = new JArray {
-                    new JObject {
-                        ["role"] = "system",
-                        ["content"] = SystemInstruction
-                    },
-                    new JObject {
-                        ["role"] = "user",
-                        ["content"] = prompt
-                    }
-                }
+                ["messages"] = messages
             };
 
             var request = new HttpRequestMessage(HttpMethod.Post, settings.ApiUrl);

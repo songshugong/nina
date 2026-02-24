@@ -74,6 +74,7 @@ namespace NINA.ViewModel.AI {
         private readonly IAsyncCommand sendPromptCommand;
         private readonly IAsyncCommand runQuickToolCommand;
         private readonly IAiCommandPlanner commandPlanner;
+        private readonly IAiRuntimeContextProvider runtimeContextProvider;
         private readonly IAiActionExecutor actionExecutor;
         private IList<AiCommand> pendingCommands = new List<AiCommand>();
         private string pendingSource = string.Empty;
@@ -87,8 +88,10 @@ namespace NINA.ViewModel.AI {
         public AIAssistantVM(
             IProfileService profileService,
             IAiCommandPlanner commandPlanner,
+            IAiRuntimeContextProvider runtimeContextProvider,
             IAiActionExecutor actionExecutor) : base(profileService) {
             this.commandPlanner = commandPlanner;
+            this.runtimeContextProvider = runtimeContextProvider;
             this.actionExecutor = actionExecutor;
 
             Title = "AI Assistant";
@@ -195,7 +198,8 @@ namespace NINA.ViewModel.AI {
                 ClearPendingIfExpired("Pending high-risk request expired. Issue command again if needed.");
 
                 AppendMessage("[user] " + userPrompt);
-                var plan = await commandPlanner.PlanAsync(userPrompt) ?? new AiCommandPlan();
+                var runtimeContext = runtimeContextProvider?.GetRuntimeContextSummary();
+                var plan = await commandPlanner.PlanAsync(userPrompt, runtimeContext) ?? new AiCommandPlan();
                 var commands = plan.Commands ?? new List<AiCommand>();
                 if (commands.Count == 0) {
                     AppendMessage("[assistant] No command parsed.");

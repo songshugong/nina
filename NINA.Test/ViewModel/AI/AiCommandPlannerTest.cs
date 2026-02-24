@@ -21,14 +21,14 @@ namespace NINA.Test.ViewModel.AI {
             plan.Source.Should().Be("json");
             plan.Commands.Select(c => c.Action).Should().ContainSingle().Which.Should().Be("status");
             plan.Commands[0].RoutingSource.Should().Be("json");
-            translator.Verify(t => t.TranslateToCommandJsonAsync(It.IsAny<string>()), Times.Never);
+            translator.Verify(t => t.TranslateToCommandJsonAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
 
         [Test]
         public async Task PlanAsync_WhenTranslatorReturnsValidJson_ShouldUseLlmSource() {
             var router = new AiCommandRouter();
             var translator = new Mock<IAiPromptTranslator>();
-            translator.Setup(t => t.TranslateToCommandJsonAsync(It.IsAny<string>()))
+            translator.Setup(t => t.TranslateToCommandJsonAsync(It.IsAny<string>(), It.IsAny<string>()))
                       .ReturnsAsync("{\"action\":\"status\"}");
             var sut = new AiCommandPlanner(router, translator.Object);
             var prompt = "what is current equipment status";
@@ -45,7 +45,7 @@ namespace NINA.Test.ViewModel.AI {
         public async Task PlanAsync_WhenTranslatorReturnsMixedSupportedAndUnsupported_ShouldKeepOnlySupported() {
             var router = new AiCommandRouter();
             var translator = new Mock<IAiPromptTranslator>();
-            translator.Setup(t => t.TranslateToCommandJsonAsync(It.IsAny<string>()))
+            translator.Setup(t => t.TranslateToCommandJsonAsync(It.IsAny<string>(), It.IsAny<string>()))
                       .ReturnsAsync("{\"commands\":[{\"action\":\"status\"},{\"action\":\"reboot\"}]}");
             var sut = new AiCommandPlanner(router, translator.Object);
 
@@ -59,7 +59,7 @@ namespace NINA.Test.ViewModel.AI {
         public async Task PlanAsync_WhenTranslatorReturnsNewSupportedActions_ShouldKeepThem() {
             var router = new AiCommandRouter();
             var translator = new Mock<IAiPromptTranslator>();
-            translator.Setup(t => t.TranslateToCommandJsonAsync(It.IsAny<string>()))
+            translator.Setup(t => t.TranslateToCommandJsonAsync(It.IsAny<string>(), It.IsAny<string>()))
                       .ReturnsAsync("{\"commands\":[{\"action\":\"guide_start\"},{\"action\":\"warm_camera\"},{\"action\":\"dome_close\"}]}");
             var sut = new AiCommandPlanner(router, translator.Object);
 
@@ -73,7 +73,7 @@ namespace NINA.Test.ViewModel.AI {
         public async Task PlanAsync_WhenTranslatorUnavailable_ShouldFallbackToRules() {
             var router = new AiCommandRouter();
             var translator = new Mock<IAiPromptTranslator>();
-            translator.Setup(t => t.TranslateToCommandJsonAsync(It.IsAny<string>()))
+            translator.Setup(t => t.TranslateToCommandJsonAsync(It.IsAny<string>(), It.IsAny<string>()))
                       .ReturnsAsync((string)null);
             var sut = new AiCommandPlanner(router, translator.Object);
             var prompt = "connect all devices";
@@ -89,7 +89,7 @@ namespace NINA.Test.ViewModel.AI {
         public async Task PlanAsync_WhenTranslatorReturnsInvalidPayload_ShouldFallbackToRules() {
             var router = new AiCommandRouter();
             var translator = new Mock<IAiPromptTranslator>();
-            translator.Setup(t => t.TranslateToCommandJsonAsync(It.IsAny<string>()))
+            translator.Setup(t => t.TranslateToCommandJsonAsync(It.IsAny<string>(), It.IsAny<string>()))
                       .ReturnsAsync("NOT JSON");
             var sut = new AiCommandPlanner(router, translator.Object);
             var prompt = "status";
@@ -99,6 +99,22 @@ namespace NINA.Test.ViewModel.AI {
             plan.Source.Should().Be("rules");
             plan.Commands.Select(c => c.Action).Should().Contain("status");
             plan.Commands.Should().OnlyContain(c => c.RoutingSource == "rules");
+        }
+
+        [Test]
+        public async Task PlanAsync_ShouldPassRuntimeContextToTranslator() {
+            var router = new AiCommandRouter();
+            var translator = new Mock<IAiPromptTranslator>();
+            translator.Setup(t => t.TranslateToCommandJsonAsync(It.IsAny<string>(), It.IsAny<string>()))
+                      .ReturnsAsync("{\"action\":\"status\"}");
+            var sut = new AiCommandPlanner(router, translator.Object);
+            var prompt = "status";
+            var runtimeContext = "mount: connected=true";
+
+            var plan = await sut.PlanAsync(prompt, runtimeContext);
+
+            plan.Source.Should().Be("llm");
+            translator.Verify(t => t.TranslateToCommandJsonAsync(prompt, runtimeContext), Times.Once);
         }
     }
 }
