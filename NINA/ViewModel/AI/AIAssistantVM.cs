@@ -87,6 +87,7 @@ namespace NINA.ViewModel.AI {
         private readonly IAsyncCommand runQuickToolCommand;
         private readonly IAiCommandPlanner commandPlanner;
         private readonly IAiRuntimeContextProvider runtimeContextProvider;
+        private readonly IAiKnowledgeBase knowledgeBase;
         private readonly IAiActionExecutor actionExecutor;
         private readonly DispatcherTimer autonomyMonitorTimer;
         private IList<AiCommand> pendingCommands = new List<AiCommand>();
@@ -108,9 +109,11 @@ namespace NINA.ViewModel.AI {
             IProfileService profileService,
             IAiCommandPlanner commandPlanner,
             IAiRuntimeContextProvider runtimeContextProvider,
+            IAiKnowledgeBase knowledgeBase,
             IAiActionExecutor actionExecutor) : base(profileService) {
             this.commandPlanner = commandPlanner;
             this.runtimeContextProvider = runtimeContextProvider;
+            this.knowledgeBase = knowledgeBase;
             this.actionExecutor = actionExecutor;
 
             Title = "AI Assistant";
@@ -126,6 +129,7 @@ namespace NINA.ViewModel.AI {
                 "NINA",
                 "Logs",
                 "ai-assistant-audit.jsonl");
+            KnowledgeBasePath = knowledgeBase?.RootDirectory ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NINA", "AI", "KnowledgeBase");
             pendingSummary = "No pending high-risk action.";
             lastExecutionSummary = "No command executed yet.";
             lastUpdated = DateTimeOffset.Now.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
@@ -144,6 +148,7 @@ namespace NINA.ViewModel.AI {
             AppendMessage("[system] Override confirmation by adding #force in prompt or confirmed=true in JSON parameters.");
             AppendMessage("[system] Optional LLM bridge: set NINA_AI_API_URL (and optionally NINA_AI_API_KEY, NINA_AI_MODEL).");
             AppendMessage("[system] Audit log: " + AuditLogPath);
+            AppendMessage("[system] Local KB path: " + KnowledgeBasePath);
 
             sendPromptCommand = new AsyncCommand<bool>(SendPromptAsync, (o) => CanSendPrompt());
             runQuickToolCommand = new AsyncCommand<bool>(RunQuickToolAsync, (o) => !isExecuting);
@@ -159,6 +164,7 @@ namespace NINA.ViewModel.AI {
         public string ProjectPhase { get; }
         public string CapabilitySummary { get; }
         public string AuditLogPath { get; }
+        public string KnowledgeBasePath { get; }
         public int SupportedActionCount => SupportedActions.Length;
         public int HighRiskActionCount => HighRiskActions.Length;
         public int PendingActionCount => pendingCommands.Count;
@@ -246,8 +252,11 @@ namespace NINA.ViewModel.AI {
                 ClearPendingIfExpired("Pending high-risk request expired. Issue command again if needed.");
 
                 AppendMessage("[user] " + userPrompt);
-                var runtimeContext = runtimeContextProvider?.GetRuntimeContextSummary();
-                var plan = await commandPlanner.PlanAsync(userPrompt, runtimeContext) ?? new AiCommandPlan();
+                var runtimeContext = runtimeContextProvider?.GetRuntimeContextSummary() ?? string.Empty;
+                var kbContext = await (knowledgeBase?.BuildContextAsync(userPrompt) ?? Task.FromResult(string.Empty));
+                var planContext = BuildPlanContext(runtimeContext, kbContext);
+                await AppendKnowledgeRecordAsync("prompt", userPrompt, $"Source prompt: {userPrompt}", "user");
+                var plan = await commandPlanner.PlanAsync(userPrompt, planContext) ?? new AiCommandPlan();
                 var commands = plan.Commands ?? new List<AiCommand>();
                 if (commands.Count == 0) {
                     AppendMessage("[assistant] No command parsed.");
@@ -412,6 +421,11 @@ namespace NINA.ViewModel.AI {
                 var prefix = result.Success ? "[assistant][ok] " : "[assistant][fail] ";
                 AppendMessage(prefix + result.Message);
                 RefreshDashboard($"{command.Action}: {result.Message}");
+                await AppendKnowledgeRecordAsync(
+                    result.Success ? "command_ok" : "command_fail",
+                    command.RawPrompt,
+                    $"{command.Action} => {result.Message}",
+                    command.RoutingSource);
             }
         }
 
@@ -493,7 +507,7 @@ namespace NINA.ViewModel.AI {
 
         private string BuildProjectOverviewMessage() {
             var pending = pendingCommands.Count == 0 ? "none" : string.Join(", ", pendingCommands.Select(c => c.Action));
-            return $"Project phase: {ProjectPhase} Capabilities: {CapabilitySummary} Supported actions={SupportedActionCount}, high-risk actions={HighRiskActionCount}, pending={pending}. Autonomy={AutonomyStatus}. Last result: {LastExecutionSummary}.";
+            return $"Project phase: {ProjectPhase} Capabilities: {CapabilitySummary} Supported actions={SupportedActionCount}, high-risk actions={HighRiskActionCount}, pending={pending}. Autonomy={AutonomyStatus}. KB={KnowledgeBasePath}. Last result: {LastExecutionSummary}.";
         }
 
         private static bool IsProjectOverviewPrompt(string promptText) {
@@ -868,6 +882,31 @@ namespace NINA.ViewModel.AI {
             UpdateAutonomyStatus();
             LastUpdated = DateTimeOffset.Now.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
             RaisePropertyChanged(nameof(PendingActionCount));
+        }
+
+        private static string BuildPlanContext(string runtimeContext, string kbContext) {
+            var runtime = runtimeContext?.Trim() ?? string.Empty;
+            var kb = kbContext?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(runtime)) {
+                return kb;
+            }
+            if (string.IsNullOrWhiteSpace(kb)) {
+                return runtime;
+            }
+            return "[Runtime]\n" + runtime + "\n\n[Local Knowledge]\n" + kb;
+        }
+
+        private Task AppendKnowledgeRecordAsync(string type, string promptText, string summary, string source) {
+            if (knowledgeBase == null) {
+                return Task.CompletedTask;
+            }
+            return knowledgeBase.AppendRecordAsync(new AiKnowledgeRecord {
+                TimestampUtc = DateTimeOffset.UtcNow,
+                Type = type ?? string.Empty,
+                Prompt = promptText ?? string.Empty,
+                Summary = summary ?? string.Empty,
+                Source = source ?? string.Empty
+            });
         }
     }
 }

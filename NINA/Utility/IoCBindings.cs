@@ -250,6 +250,7 @@ namespace NINA.Utility {
                 services.AddSingleton<IAiPromptTranslator, OpenAiCompatiblePromptTranslator>();
                 services.AddSingleton<IAiCommandPlanner, AiCommandPlanner>();
                 services.AddSingleton<IAiRuntimeContextProvider, AiRuntimeContextProvider>();
+                services.AddSingleton<IAiKnowledgeBase, AiLocalKnowledgeBase>();
                 services.AddSingleton<IAiAuditLogWriter, AiAuditLogWriter>();
                 services.AddSingleton<IAiActionExecutor, AiActionExecutor>();
                 services.AddSingleton<IAIAssistantVM, AIAssistantVM>();

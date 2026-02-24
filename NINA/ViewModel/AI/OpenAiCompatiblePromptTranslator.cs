@@ -77,7 +77,7 @@ namespace NINA.ViewModel.AI {
             if (!string.IsNullOrWhiteSpace(runtimeContext)) {
                 messages.Add(new JObject {
                     ["role"] = "system",
-                    ["content"] = "Runtime equipment context (real-time):\n" + runtimeContext + "\nPrefer commands that match this context and avoid impossible or unsupported operations."
+                    ["content"] = "Operational context (runtime state + local knowledge base):\n" + runtimeContext + "\nPrefer commands that match this context and avoid impossible or unsupported operations."
                 });
             }
 

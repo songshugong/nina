@@ -110,6 +110,7 @@
                 </Grid>
 
                 <TextBlock Margin="0,6,0,0" FontSize="11" Opacity="0.75" Text="{Binding AuditLogPath}" TextWrapping="Wrap" />
+                <TextBlock Margin="0,2,0,0" FontSize="11" Opacity="0.75" Text="{Binding KnowledgeBasePath}" TextWrapping="Wrap" />
             </StackPanel>
         </Border>
 
