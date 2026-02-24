@@ -23,6 +23,7 @@ using NINA.WPF.Base.ViewModel.Equipment.Telescope;
 using NINA.WPF.Base.ViewModel.Equipment.WeatherData;
 using NINA.ViewModel.ImageHistory;
 using NINA.ViewModel.Imaging;
+using NINA.ViewModel.AI;
 using NINA.ViewModel.Sequencer;
 using System.Windows;
 using System.Windows.Controls;
@@ -73,6 +74,7 @@ namespace NINA.Utility.AvalonDock {
 
         public DataTemplate SwitchTemplate { get; set; }
         public DataTemplate FlatDeviceTemplate { get; set; }
+        public DataTemplate AIAssistantTemplate { get; set; }
 
         public DataTemplate DomeTemplate { get; set; }
 
@@ -140,6 +142,9 @@ namespace NINA.Utility.AvalonDock {
 
                 case SafetyMonitorVM _:
                     return SafetyMonitorTemplate;
+
+                case AIAssistantVM _:
+                    return AIAssistantTemplate;
 
                 default:
                     var templateKey = item.GetType().FullName + "_Dockable";

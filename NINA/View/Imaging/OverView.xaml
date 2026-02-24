@@ -149,6 +149,12 @@
                     </DataTemplate>
                 </util:PaneTemplateSelector.FlatDeviceTemplate>
 
+                <util:PaneTemplateSelector.AIAssistantTemplate>
+                    <DataTemplate>
+                        <view:AnchorableAIAssistantView />
+                    </DataTemplate>
+                </util:PaneTemplateSelector.AIAssistantTemplate>
+
                 <util:PaneTemplateSelector.FailedToLoadTemplate>
                     <DataTemplate>
                         <TextBlock

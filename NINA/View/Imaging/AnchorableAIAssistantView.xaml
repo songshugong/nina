@@ -1,0 +1,65 @@
+<!--
+    Copyright (c) 2016 - 2026 Stefan Berg <isbeorn86+NINA@googlemail.com> and the N.I.N.A. contributors
+
+    This file is part of N.I.N.A. - Nighttime Imaging 'N' Astronomy.
+
+    This Source Code Form is subject to the terms of the Mozilla Public
+    License, v. 2.0. If a copy of the MPL was not distributed with this
+    file, You can obtain one at http://mozilla.org/MPL/2.0/.-->
+<UserControl
+    x:Class="NINA.View.AnchorableAIAssistantView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    mc:Ignorable="d">
+    <Grid Margin="6">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border
+            Margin="0,0,0,6"
+            Padding="6"
+            Background="{StaticResource SecondaryBackgroundBrush}"
+            BorderBrush="{StaticResource BorderBrush}"
+            BorderThickness="1">
+            <TextBlock
+                Text="Experimental AI panel. This build uses local command routing and execution."
+                TextWrapping="Wrap" />
+        </Border>
+
+        <ListBox
+            Grid.Row="1"
+            Margin="0,0,0,6"
+            ItemsSource="{Binding Messages}">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Margin="4,2,4,2" Text="{Binding}" TextWrapping="Wrap" />
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox
+                Margin="0,0,6,0"
+                KeyDown="PromptTextBox_OnKeyDown"
+                VerticalContentAlignment="Center"
+                Text="{Binding Prompt, UpdateSourceTrigger=PropertyChanged}" />
+            <Button
+                Grid.Column="1"
+                Command="{Binding SendPromptCommand}"
+                MinWidth="80">
+                <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="Send" />
+            </Button>
+        </Grid>
+    </Grid>
+</UserControl>

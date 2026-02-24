@@ -73,6 +73,7 @@ namespace NINA.ViewModel {
                              IImageStatisticsVM imageStatisticsVM,
                              IFlatDeviceVM flatDeviceVM,
                              ISafetyMonitorVM safetyMonitorVM,
+                             IAIAssistantVM aiAssistantVM,
                              IPluginLoader pluginProvider) : base(profileService) {
             LoadAvalonDockLayoutCommand = new AsyncCommand<bool>((object o) => Task.Run(() => InitializeAvalonDockLayout(o)));
             ResetDockLayoutCommand = new RelayCommand(ResetDockLayout, (object o) => _dockmanager != null);
@@ -103,6 +104,7 @@ namespace NINA.ViewModel {
             initAnchorables.Add(plateSolverVM);
             initAnchorables.Add(autoFocusToolVM);
             initAnchorables.Add(focusTargetsVM);
+            initAnchorables.Add(aiAssistantVM);
             initAnchorables.Add(flatDeviceVM);
             initAnchorables.Add(safetyMonitorVM);
 
@@ -127,6 +129,7 @@ namespace NINA.ViewModel {
             initAnchorableTools.Add(plateSolverVM);
             initAnchorableTools.Add(autoFocusToolVM);
             initAnchorableTools.Add(focusTargetsVM);
+            initAnchorableTools.Add(aiAssistantVM);
 
             profileService.BeforeProfileChanging += ProfileService_BeforeProfileChanging; ;
             profileService.ProfileChanged += ProfileService_ProfileChanged;
