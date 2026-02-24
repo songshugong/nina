@@ -33,6 +33,8 @@
                 <TextBlock FontSize="14" FontWeight="SemiBold" Text="AI Observatory Console" />
                 <TextBlock Margin="0,4,0,0" Opacity="0.85" Text="{Binding ProjectPhase}" TextWrapping="Wrap" />
                 <TextBlock Margin="0,2,0,0" Opacity="0.85" Text="{Binding CapabilitySummary}" TextWrapping="Wrap" />
+                <TextBlock Margin="0,2,0,0" Opacity="0.85" Text="{Binding AutonomyStatus}" TextWrapping="Wrap" />
+                <TextBlock Margin="0,2,0,0" FontSize="11" Opacity="0.75" Text="{Binding AutonomyLastReason}" TextWrapping="Wrap" />
 
                 <Grid Margin="0,8,0,0">
                     <Grid.ColumnDefinitions>
@@ -145,6 +147,26 @@
                     CommandParameter="help"
                     MinWidth="90">
                     <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="Help" />
+                </Button>
+                <Button
+                    Margin="6,0,6,0"
+                    Command="{Binding RunQuickToolCommand}"
+                    CommandParameter="monitor_start"
+                    MinWidth="110">
+                    <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="Start Monitor" />
+                </Button>
+                <Button
+                    Margin="0,0,6,0"
+                    Command="{Binding RunQuickToolCommand}"
+                    CommandParameter="monitor_stop"
+                    MinWidth="110">
+                    <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="Stop Monitor" />
+                </Button>
+                <Button
+                    Command="{Binding RunQuickToolCommand}"
+                    CommandParameter="monitor_status"
+                    MinWidth="110">
+                    <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="Monitor Status" />
                 </Button>
             </WrapPanel>
         </Border>

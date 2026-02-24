@@ -17,6 +17,7 @@ using NINA.Sequencer.Interfaces.Mediator;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using NINA.Equipment.Interfaces;
 
 namespace NINA.ViewModel.AI {
 
@@ -25,6 +26,7 @@ namespace NINA.ViewModel.AI {
         private readonly ITelescopeMediator telescopeMediator;
         private readonly IGuiderMediator guiderMediator;
         private readonly IFlatDeviceMediator flatDeviceMediator;
+        private readonly IWeatherDataMediator weatherDataMediator;
         private readonly IDomeMediator domeMediator;
         private readonly ISafetyMonitorMediator safetyMonitorMediator;
         private readonly ISequenceMediator sequenceMediator;
@@ -34,6 +36,7 @@ namespace NINA.ViewModel.AI {
             ITelescopeMediator telescopeMediator,
             IGuiderMediator guiderMediator,
             IFlatDeviceMediator flatDeviceMediator,
+            IWeatherDataMediator weatherDataMediator,
             IDomeMediator domeMediator,
             ISafetyMonitorMediator safetyMonitorMediator,
             ISequenceMediator sequenceMediator) {
@@ -41,45 +44,92 @@ namespace NINA.ViewModel.AI {
             this.telescopeMediator = telescopeMediator;
             this.guiderMediator = guiderMediator;
             this.flatDeviceMediator = flatDeviceMediator;
+            this.weatherDataMediator = weatherDataMediator;
             this.domeMediator = domeMediator;
             this.safetyMonitorMediator = safetyMonitorMediator;
             this.sequenceMediator = sequenceMediator;
         }
 
-        public string GetRuntimeContextSummary() {
-            var lines = new List<string>();
+        public AiRuntimeSnapshot GetSnapshot() {
+            var snapshot = new AiRuntimeSnapshot {
+                TimestampUtc = DateTimeOffset.UtcNow
+            };
 
             var camera = SafeGet(() => cameraMediator.GetInfo());
-            lines.Add($"camera: connected={ToBool(camera?.Connected)}, can_set_temperature={ToBool(camera?.CanSetTemperature)}, cooler_on={ToBool(camera?.CoolerOn)}");
+            snapshot.CameraConnected = camera?.Connected == true;
+            snapshot.CameraCanSetTemperature = camera?.CanSetTemperature == true;
+            snapshot.CameraCoolerOn = camera?.CoolerOn == true;
 
             var mount = SafeGet(() => telescopeMediator.GetInfo());
-            lines.Add($"mount: connected={ToBool(mount?.Connected)}, at_park={ToBool(mount?.AtPark)}, tracking={ToBool(mount?.TrackingEnabled)}, can_find_home={ToBool(mount?.CanFindHome)}, slewing={ToBool(mount?.Slewing)}");
+            snapshot.MountConnected = mount?.Connected == true;
+            snapshot.MountAtPark = mount?.AtPark == true;
+            snapshot.MountTrackingEnabled = mount?.TrackingEnabled == true;
+            snapshot.MountCanFindHome = mount?.CanFindHome == true;
+            snapshot.MountSlewing = mount?.Slewing == true;
 
             var guider = SafeGet(() => guiderMediator.GetInfo());
-            lines.Add($"guider: connected={ToBool(guider?.Connected)}, can_clear_calibration={ToBool(guider?.CanClearCalibration)}");
+            snapshot.GuiderConnected = guider?.Connected == true;
+            snapshot.GuiderCanClearCalibration = guider?.CanClearCalibration == true;
 
             var dome = SafeGet(() => domeMediator.GetInfo());
-            lines.Add($"dome: connected={ToBool(dome?.Connected)}, shutter={dome?.ShutterStatus.ToString() ?? "unknown"}, can_set_shutter={ToBool(dome?.CanSetShutter)}, can_park={ToBool(dome?.CanPark)}, can_find_home={ToBool(dome?.CanFindHome)}, following_driver={ToBool(dome?.DriverFollowing)}, following_app={ToBool(dome?.ApplicationFollowing)}");
+            snapshot.DomeConnected = dome?.Connected == true;
+            snapshot.DomeShutterStatus = dome?.ShutterStatus ?? ShutterState.ShutterNone;
+            snapshot.DomeCanSetShutter = dome?.CanSetShutter == true;
+            snapshot.DomeCanPark = dome?.CanPark == true;
+            snapshot.DomeCanFindHome = dome?.CanFindHome == true;
+            snapshot.DomeDriverFollowing = dome?.DriverFollowing == true;
+            snapshot.DomeApplicationFollowing = dome?.ApplicationFollowing == true;
 
             var flat = SafeGet(() => flatDeviceMediator.GetInfo());
-            var brightness = flat == null ? "unknown" : flat.Brightness.ToString(CultureInfo.InvariantCulture);
-            lines.Add($"flat_panel: connected={ToBool(flat?.Connected)}, supports_on_off={ToBool(flat?.SupportsOnOff)}, light_on={ToBool(flat?.LightOn)}, brightness={brightness}");
+            snapshot.FlatPanelConnected = flat?.Connected == true;
+            snapshot.FlatPanelSupportsOnOff = flat?.SupportsOnOff == true;
+            snapshot.FlatPanelLightOn = flat?.LightOn == true;
+            snapshot.FlatPanelBrightness = flat == null ? null : flat.Brightness;
+
+            var weather = SafeGet(() => weatherDataMediator.GetInfo());
+            snapshot.WeatherConnected = weather?.Connected == true;
+            snapshot.CloudCover = NormalizeFinite(weather?.CloudCover);
+            snapshot.Humidity = NormalizeFinite(weather?.Humidity);
+            snapshot.RainRate = NormalizeFinite(weather?.RainRate);
 
             var safety = SafeGet(() => safetyMonitorMediator.GetInfo());
-            lines.Add($"safety_monitor: connected={ToBool(safety?.Connected)}, is_safe={ToBool(safety?.IsSafe)}");
+            snapshot.SafetyMonitorConnected = safety?.Connected == true;
+            snapshot.SafetyMonitorIsSafe = safety?.IsSafe == true;
 
-            var sequenceInitialized = SafeGet(() => sequenceMediator.Initialized, false);
-            var sequenceRunning = sequenceInitialized && SafeGet(() => sequenceMediator.IsAdvancedSequenceRunning(), false);
-            lines.Add($"sequencer: initialized={ToBool(sequenceInitialized)}, running={ToBool(sequenceRunning)}");
+            snapshot.SequencerInitialized = SafeGet(() => sequenceMediator.Initialized, false);
+            snapshot.SequencerRunning = snapshot.SequencerInitialized && SafeGet(() => sequenceMediator.IsAdvancedSequenceRunning(), false);
 
+            return snapshot;
+        }
+
+        public string GetRuntimeContextSummary() {
+            var snapshot = GetSnapshot();
+            var lines = new List<string> {
+                $"camera: connected={ToBool(snapshot.CameraConnected)}, can_set_temperature={ToBool(snapshot.CameraCanSetTemperature)}, cooler_on={ToBool(snapshot.CameraCoolerOn)}",
+                $"mount: connected={ToBool(snapshot.MountConnected)}, at_park={ToBool(snapshot.MountAtPark)}, tracking={ToBool(snapshot.MountTrackingEnabled)}, can_find_home={ToBool(snapshot.MountCanFindHome)}, slewing={ToBool(snapshot.MountSlewing)}",
+                $"guider: connected={ToBool(snapshot.GuiderConnected)}, can_clear_calibration={ToBool(snapshot.GuiderCanClearCalibration)}",
+                $"dome: connected={ToBool(snapshot.DomeConnected)}, shutter={snapshot.DomeShutterStatus}, can_set_shutter={ToBool(snapshot.DomeCanSetShutter)}, can_park={ToBool(snapshot.DomeCanPark)}, can_find_home={ToBool(snapshot.DomeCanFindHome)}, following_driver={ToBool(snapshot.DomeDriverFollowing)}, following_app={ToBool(snapshot.DomeApplicationFollowing)}",
+                $"flat_panel: connected={ToBool(snapshot.FlatPanelConnected)}, supports_on_off={ToBool(snapshot.FlatPanelSupportsOnOff)}, light_on={ToBool(snapshot.FlatPanelLightOn)}, brightness={snapshot.FlatPanelBrightness?.ToString(CultureInfo.InvariantCulture) ?? "unknown"}",
+                $"weather: connected={ToBool(snapshot.WeatherConnected)}, cloud_cover={FormatDouble(snapshot.CloudCover)}, humidity={FormatDouble(snapshot.Humidity)}, rain_rate={FormatDouble(snapshot.RainRate)}",
+                $"safety_monitor: connected={ToBool(snapshot.SafetyMonitorConnected)}, is_safe={ToBool(snapshot.SafetyMonitorIsSafe)}",
+                $"sequencer: initialized={ToBool(snapshot.SequencerInitialized)}, running={ToBool(snapshot.SequencerRunning)}"
+            };
             return string.Join("\n", lines);
         }
 
-        private static string ToBool(bool? value) {
-            if (!value.HasValue) {
-                return "unknown";
+        private static double? NormalizeFinite(double? value) {
+            if (!value.HasValue || double.IsNaN(value.Value) || double.IsInfinity(value.Value)) {
+                return null;
             }
-            return value.Value ? "true" : "false";
+            return value;
+        }
+
+        private static string FormatDouble(double? value) {
+            return value.HasValue ? value.Value.ToString("0.###", CultureInfo.InvariantCulture) : "unknown";
+        }
+
+        private static string ToBool(bool value) {
+            return value ? "true" : "false";
         }
 
         private static T SafeGet<T>(Func<T> getter, T fallback = default) {

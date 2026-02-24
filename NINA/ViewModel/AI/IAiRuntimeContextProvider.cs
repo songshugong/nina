@@ -15,6 +15,7 @@
 namespace NINA.ViewModel.AI {
 
     public interface IAiRuntimeContextProvider {
+        AiRuntimeSnapshot GetSnapshot();
         string GetRuntimeContextSummary();
     }
 }
