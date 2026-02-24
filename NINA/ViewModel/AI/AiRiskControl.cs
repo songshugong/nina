@@ -60,21 +60,25 @@ namespace NINA.ViewModel.AI {
                 return false;
             }
 
-            if (IsForcePrompt(prompt)) {
-                return false;
-            }
-
             foreach (var command in commands) {
-                if (command == null) {
-                    continue;
-                }
-
-                if (IsHighRiskAction(command.Action) && !HasConfirmedFlag(command.Parameters)) {
+                if (NeedsConfirmation(command, prompt)) {
                     return true;
                 }
             }
 
             return false;
+        }
+
+        public static bool NeedsConfirmation(AiCommand command, string prompt) {
+            if (command == null) {
+                return false;
+            }
+
+            if (IsForcePrompt(prompt)) {
+                return false;
+            }
+
+            return IsHighRiskAction(command.Action) && !HasConfirmedFlag(command.Parameters);
         }
 
         public static bool IsHighRiskAction(string action) {

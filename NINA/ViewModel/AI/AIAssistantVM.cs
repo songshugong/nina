@@ -109,19 +109,42 @@ namespace NINA.ViewModel.AI {
                     return false;
                 }
 
-                if (AiRiskControl.RequiresConfirmation(commands, userPrompt)) {
-                    pendingCommands = commands;
+                var queuedCommands = new List<AiCommand>();
+                var immediateCommands = new List<AiCommand>();
+                foreach (var command in commands) {
+                    if (AiRiskControl.NeedsConfirmation(command, userPrompt)) {
+                        queuedCommands.Add(command);
+                    } else {
+                        immediateCommands.Add(command);
+                    }
+                }
+
+                var executedImmediately = false;
+                if (immediateCommands.Count > 0) {
+                    await ExecuteCommandsAsync(immediateCommands, plan.Source ?? string.Empty);
+                    executedImmediately = true;
+                }
+
+                if (queuedCommands.Count > 0) {
+                    pendingCommands = queuedCommands;
                     pendingSource = plan.Source ?? string.Empty;
                     pendingCreatedAtUtc = DateTimeOffset.UtcNow;
-                    var actions = string.Join(", ", commands.Select(c => c.Action));
+                    var actions = string.Join(", ", queuedCommands.Select(c => c.Action));
                     AppendMessage("[planner] source=" + pendingSource);
                     AppendMessage("[router] " + actions);
+                    if (executedImmediately) {
+                        AppendMessage("[assistant] Non-high-risk actions were executed immediately.");
+                    }
                     AppendMessage("[assistant][confirm] High-risk actions queued. Type \"confirm\"/\"确认\" within 90s to execute, \"pending\"/\"待确认\" to inspect, or \"cancel\"/\"取消\".");
                     Prompt = string.Empty;
                     return true;
                 }
 
-                await ExecuteCommandsAsync(commands, plan.Source ?? string.Empty);
+                if (!executedImmediately) {
+                    AppendMessage("[assistant] No executable command.");
+                    return false;
+                }
+
                 Prompt = string.Empty;
                 return true;
             } finally {

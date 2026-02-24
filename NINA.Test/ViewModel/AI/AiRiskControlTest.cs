@@ -31,6 +31,18 @@ namespace NINA.Test.ViewModel.AI {
         }
 
         [Test]
+        public void RequiresConfirmation_MixedRiskAndNonRisk_ShouldBeTrue() {
+            var commands = new List<AiCommand> {
+                new AiCommand { Action = "status" },
+                new AiCommand { Action = "park" }
+            };
+
+            var result = AiRiskControl.RequiresConfirmation(commands, "status and park");
+
+            result.Should().BeTrue();
+        }
+
+        [Test]
         public void RequiresConfirmation_HighRiskWithConfirmedFlag_ShouldBeFalse() {
             var commands = new List<AiCommand> {
                 new AiCommand {
@@ -60,6 +72,13 @@ namespace NINA.Test.ViewModel.AI {
             var result = AiRiskControl.RequiresConfirmation(commands, "{\"action\":\"slew\"}");
 
             result.Should().BeFalse();
+        }
+
+        [Test]
+        public void NeedsConfirmation_SingleCommand_ShouldRespectRiskRules() {
+            AiRiskControl.NeedsConfirmation(new AiCommand { Action = "status" }, "status").Should().BeFalse();
+            AiRiskControl.NeedsConfirmation(new AiCommand { Action = "slew" }, "slew target").Should().BeTrue();
+            AiRiskControl.NeedsConfirmation(new AiCommand { Action = "slew" }, "slew #force").Should().BeFalse();
         }
 
         [Test]
