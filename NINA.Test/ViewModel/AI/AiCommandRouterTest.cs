@@ -26,6 +26,26 @@ namespace NINA.Test.ViewModel.AI {
         }
 
         [Test]
+        public void Route_FrameKeywordWithTarget_ShouldCreateFrameTargetCommandWithParameter() {
+            var sut = new AiCommandRouter();
+
+            var result = sut.Route("frame M31");
+
+            var frame = result.Single(c => c.Action == "frame_target");
+            frame.Parameters["target"].Should().Be("M31");
+        }
+
+        [Test]
+        public void Route_SlewWithNamedTarget_ShouldChainFrameTargetThenSlew() {
+            var sut = new AiCommandRouter();
+
+            var result = sut.Route("slew to M42");
+
+            result.Select(c => c.Action).Should().Equal("frame_target", "slew");
+            result[0].Parameters["target"].Should().Be("M42");
+        }
+
+        [Test]
         public void Route_ShouldParseJsonBatchCommands() {
             var sut = new AiCommandRouter();
             var json = "{\"commands\":[{\"action\":\"status\"},{\"action\":\"slew\",\"parameters\":{\"ra\":\"5.5\",\"dec\":\"-2.1\"}}]}";

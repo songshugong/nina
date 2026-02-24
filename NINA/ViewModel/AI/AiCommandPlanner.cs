@@ -32,6 +32,7 @@ namespace NINA.ViewModel.AI {
             "unpark",
             "home_mount",
             "platesolve",
+            "frame_target",
             "center",
             "slew",
             "tracking_on",

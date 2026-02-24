@@ -14,6 +14,7 @@
 
 using NINA.Core.Model;
 using NINA.Core.Utility;
+using NINA.Astrometry;
 using NINA.Equipment.Interfaces;
 using NINA.Equipment.Interfaces.Mediator;
 using NINA.Sequencer.Interfaces.Mediator;
@@ -98,7 +99,7 @@ namespace NINA.ViewModel.AI {
             try {
                 switch (command.Action.ToLowerInvariant()) {
                     case "help":
-                        result = Ok("Supported: connect, disconnect, status, start_sequence, stop, park, unpark, home_mount, platesolve, center, slew, tracking_on, tracking_off, guide_start, guide_stop, cool_camera, warm_camera, dome_open, dome_close, dome_follow_on, dome_follow_off, dome_park, dome_home, flat_light_on, flat_light_off. Control: confirm, cancel, pending. JSON example: {\"action\":\"slew\",\"parameters\":{\"ra\":\"5.5\",\"dec\":\"-2.1\",\"ra_unit\":\"hours\",\"confirmed\":\"true\"}}. Slew ranges: ra_unit=hours => ra [0,24); ra_unit=deg => ra [0,360); dec [-90,90]. High-risk actions require confirm/cancel unless overridden; while pending exists, new high-risk actions are ignored.");
+                        result = Ok("Supported: connect, disconnect, status, start_sequence, stop, park, unpark, home_mount, platesolve, frame_target, center, slew, tracking_on, tracking_off, guide_start, guide_stop, cool_camera, warm_camera, dome_open, dome_close, dome_follow_on, dome_follow_off, dome_park, dome_home, flat_light_on, flat_light_off. Control: confirm, cancel, pending. JSON examples: {\"action\":\"frame_target\",\"parameters\":{\"target\":\"M31\"}} or {\"action\":\"slew\",\"parameters\":{\"ra\":\"5.5\",\"dec\":\"-2.1\",\"ra_unit\":\"hours\",\"confirmed\":\"true\"}}. Slew ranges: ra_unit=hours => ra [0,24); ra_unit=deg => ra [0,360); dec [-90,90]. High-risk actions require confirm/cancel unless overridden; while pending exists, new high-risk actions are ignored.");
                         break;
 
                     case "connect":
@@ -177,6 +178,10 @@ namespace NINA.ViewModel.AI {
                             break;
                         }
                         result = await ExecuteAsyncCommand(plateSolverVM.SolveCommand, null, "Plate solve");
+                        break;
+
+                    case "frame_target":
+                        result = await FrameTargetAsync(command.Parameters);
                         break;
 
                     case "center":
@@ -495,6 +500,162 @@ namespace NINA.ViewModel.AI {
             });
             await commandTask;
             return Ok($"{actionName} executed.");
+        }
+
+        private async Task<AiExecutionResult> FrameTargetAsync(IDictionary<string, string> parameters) {
+            var target = GetTargetName(parameters);
+            if (string.IsNullOrWhiteSpace(target)) {
+                return Fail("frame_target requires target parameter, e.g. {\"action\":\"frame_target\",\"parameters\":{\"target\":\"M31\"}}.");
+            }
+
+            var dso = await ResolveTargetAsync(target);
+            if (dso == null) {
+                return Fail($"Target '{target}' not found in local DSO catalog.");
+            }
+
+            var ready = await WaitForFramingAssistantReadyAsync(TimeSpan.FromSeconds(8));
+            if (!ready) {
+                return Fail("Framing Assistant is not ready yet. Open the Framing tab once and retry.");
+            }
+
+            var setTask = framingAssistantVM.SetCoordinates(dso);
+            var completed = await Task.WhenAny(setTask, Task.Delay(TimeSpan.FromSeconds(45))) == setTask;
+            if (!completed) {
+                return Fail("Framing target timed out. Ensure Framing Assistant stays open and try again.");
+            }
+
+            if (!await setTask) {
+                return Fail($"Failed to load framing target '{target}'.");
+            }
+
+            return Ok($"Framing target loaded: {dso.Name}.");
+        }
+
+        private async Task<DeepSkyObject> ResolveTargetAsync(string target) {
+            var db = new DatabaseInteraction();
+            var searchParams = new DatabaseInteraction.DeepSkyObjectSearchParams {
+                ObjectName = target,
+                Limit = 20
+            };
+
+            var results = await db.GetDeepSkyObjects(string.Empty, null, searchParams, CancellationToken.None);
+            if (results == null || results.Count == 0) {
+                return null;
+            }
+
+            return SelectBestTarget(results, target);
+        }
+
+        private static DeepSkyObject SelectBestTarget(IList<DeepSkyObject> candidates, string requested) {
+            if (candidates == null || candidates.Count == 0) {
+                return null;
+            }
+
+            var normalizedRequested = NormalizeToken(requested);
+            DeepSkyObject best = candidates[0];
+            var bestScore = ScoreTarget(best, requested, normalizedRequested);
+            for (var i = 1; i < candidates.Count; i++) {
+                var candidate = candidates[i];
+                var score = ScoreTarget(candidate, requested, normalizedRequested);
+                if (score > bestScore) {
+                    best = candidate;
+                    bestScore = score;
+                }
+            }
+            return best;
+        }
+
+        private static int ScoreTarget(DeepSkyObject candidate, string requested, string normalizedRequested) {
+            if (candidate == null) {
+                return -1;
+            }
+
+            var aliases = new List<string>();
+            if (!string.IsNullOrWhiteSpace(candidate.Name)) {
+                aliases.Add(candidate.Name);
+            }
+            if (!string.IsNullOrWhiteSpace(candidate.Id)) {
+                aliases.Add(candidate.Id);
+            }
+            if (candidate.AlsoKnownAs != null && candidate.AlsoKnownAs.Count > 0) {
+                aliases.AddRange(candidate.AlsoKnownAs);
+            }
+
+            var best = 0;
+            foreach (var alias in aliases) {
+                if (string.IsNullOrWhiteSpace(alias)) {
+                    continue;
+                }
+
+                if (string.Equals(alias, requested, StringComparison.OrdinalIgnoreCase)) {
+                    return 400;
+                }
+
+                var normalizedAlias = NormalizeToken(alias);
+                if (!string.IsNullOrWhiteSpace(normalizedRequested) &&
+                    string.Equals(normalizedAlias, normalizedRequested, StringComparison.OrdinalIgnoreCase)) {
+                    best = Math.Max(best, 300);
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(normalizedRequested) &&
+                    normalizedAlias.Contains(normalizedRequested, StringComparison.OrdinalIgnoreCase)) {
+                    best = Math.Max(best, 200);
+                    continue;
+                }
+
+                if (alias.Contains(requested, StringComparison.OrdinalIgnoreCase)) {
+                    best = Math.Max(best, 100);
+                }
+            }
+
+            return best;
+        }
+
+        private static string NormalizeToken(string text) {
+            if (string.IsNullOrWhiteSpace(text)) {
+                return string.Empty;
+            }
+
+            var buffer = new List<char>(text.Length);
+            foreach (var c in text) {
+                if (char.IsLetterOrDigit(c)) {
+                    buffer.Add(char.ToLowerInvariant(c));
+                }
+            }
+            return new string(buffer.ToArray());
+        }
+
+        private async Task<bool> WaitForFramingAssistantReadyAsync(TimeSpan timeout) {
+            if (framingAssistantVM.BoundWidth > 0 && framingAssistantVM.BoundHeight > 0) {
+                return true;
+            }
+
+            var deadline = DateTimeOffset.UtcNow + timeout;
+            while (DateTimeOffset.UtcNow < deadline) {
+                await Task.Delay(100);
+                if (framingAssistantVM.BoundWidth > 0 && framingAssistantVM.BoundHeight > 0) {
+                    return true;
+                }
+            }
+
+            return framingAssistantVM.BoundWidth > 0 && framingAssistantVM.BoundHeight > 0;
+        }
+
+        private static string GetTargetName(IDictionary<string, string> parameters) {
+            if (parameters == null) {
+                return string.Empty;
+            }
+
+            if (parameters.TryGetValue("target", out var target) && !string.IsNullOrWhiteSpace(target)) {
+                return target.Trim();
+            }
+
+            if (parameters.TryGetValue("name", out var name) && !string.IsNullOrWhiteSpace(name)) {
+                return name.Trim();
+            }
+
+            return string.Empty;
         }
 
         private AiExecutionResult CheckStartSequenceGuards() {

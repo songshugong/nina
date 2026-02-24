@@ -32,11 +32,12 @@ namespace NINA.ViewModel.AI {
 
         private const string SystemInstruction =
             "You convert user astronomy control intent into NINA command JSON only. " +
-            "Allowed actions: connect, disconnect, status, start_sequence, stop, park, unpark, home_mount, platesolve, center, slew, tracking_on, tracking_off, guide_start, guide_stop, cool_camera, warm_camera, dome_open, dome_close, dome_follow_on, dome_follow_off, dome_park, dome_home, flat_light_on, flat_light_off, help. " +
+            "Allowed actions: connect, disconnect, status, start_sequence, stop, park, unpark, home_mount, platesolve, frame_target, center, slew, tracking_on, tracking_off, guide_start, guide_stop, cool_camera, warm_camera, dome_open, dome_close, dome_follow_on, dome_follow_off, dome_park, dome_home, flat_light_on, flat_light_off, help. " +
             "Return a JSON object only. Single command format: " +
             "{\"action\":\"status\",\"parameters\":{}}. " +
             "Multi command format: " +
             "{\"commands\":[{\"action\":\"status\",\"parameters\":{}},{\"action\":\"connect\",\"parameters\":{}}]}. " +
+            "For frame_target use parameters target or name, e.g. {\"action\":\"frame_target\",\"parameters\":{\"target\":\"M31\"}}. " +
             "For slew use parameters ra, dec, optional ra_unit (hours|deg). " +
             "Never include markdown or explanations.";
 

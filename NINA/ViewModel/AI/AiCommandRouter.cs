@@ -16,6 +16,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace NINA.ViewModel.AI {
 
@@ -35,6 +36,20 @@ namespace NINA.ViewModel.AI {
             }
 
             var normalized = text.ToLowerInvariant();
+            var hasFrameIntent = HasAny(normalized, "frame", "framing", "构图");
+            var hasCenterIntent = HasAny(normalized, "center", "居中");
+            var hasSlewIntent = HasAny(normalized, "slew", "goto", "go to", "point to", "转到", "指向", "转向");
+            if (TryExtractTargetName(text, hasFrameIntent, hasCenterIntent, hasSlewIntent, out var targetName)) {
+                AddUnique(
+                    commands,
+                    actionSet,
+                    "frame_target",
+                    text,
+                    new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) {
+                        ["target"] = targetName
+                    });
+            }
+
             if (HasAny(normalized, "connect", "连接", "连设备", "connect all")) {
                 AddUnique(commands, actionSet, "connect", text);
             }
@@ -80,9 +95,9 @@ namespace NINA.ViewModel.AI {
                 AddUnique(commands, actionSet, "platesolve", text);
             }
 
-            if (HasAny(normalized, "center", "居中")) {
+            if (hasCenterIntent) {
                 AddUnique(commands, actionSet, "center", text);
-            } else if (HasAny(normalized, "slew", "goto", "转到", "指向")) {
+            } else if (hasSlewIntent) {
                 AddUnique(commands, actionSet, "slew", text);
             }
 
@@ -202,17 +217,114 @@ namespace NINA.ViewModel.AI {
             };
         }
 
-        private static AiCommand Create(string action, string rawPrompt) {
+        private static AiCommand Create(string action, string rawPrompt, IDictionary<string, string> parameters = null) {
             return new AiCommand {
                 Action = action,
-                RawPrompt = rawPrompt
+                RawPrompt = rawPrompt,
+                Parameters = parameters != null
+                    ? new Dictionary<string, string>(parameters, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             };
         }
 
-        private static void AddUnique(ICollection<AiCommand> commands, ISet<string> actionSet, string action, string rawPrompt) {
+        private static void AddUnique(ICollection<AiCommand> commands, ISet<string> actionSet, string action, string rawPrompt, IDictionary<string, string> parameters = null) {
             if (actionSet.Add(action)) {
-                commands.Add(Create(action, rawPrompt));
+                commands.Add(Create(action, rawPrompt, parameters));
             }
+        }
+
+        private static bool TryExtractTargetName(string text, bool hasFrameIntent, bool hasCenterIntent, bool hasSlewIntent, out string targetName) {
+            targetName = string.Empty;
+            if (string.IsNullOrWhiteSpace(text)) {
+                return false;
+            }
+
+            if (!hasFrameIntent && !hasCenterIntent && !hasSlewIntent) {
+                return false;
+            }
+
+            var trimmed = text.Trim();
+
+            var keyValueMatch = Regex.Match(trimmed, @"(?i)\b(?:target|name)\s*[:=]\s*(?<target>.+)$");
+            if (keyValueMatch.Success) {
+                var parsed = CleanupTargetName(keyValueMatch.Groups["target"].Value);
+                if (IsTargetNameUsable(parsed)) {
+                    targetName = parsed;
+                    return true;
+                }
+            }
+
+            var keywordMatch = Regex.Match(
+                trimmed,
+                @"(?i)(?:frame(?:\s+target)?|framing|center(?:\s+on)?|slew(?:\s+to)?|go\s*to|goto|point\s*to|构图(?:到)?|居中(?:到)?|指向|转到|转向)\s*(?<target>.+)$");
+            if (!keywordMatch.Success) {
+                return false;
+            }
+
+            var candidate = CleanupTargetName(keywordMatch.Groups["target"].Value);
+            if (!IsTargetNameUsable(candidate)) {
+                return false;
+            }
+
+            targetName = candidate;
+            return true;
+        }
+
+        private static string CleanupTargetName(string target) {
+            if (string.IsNullOrWhiteSpace(target)) {
+                return string.Empty;
+            }
+
+            var cleaned = target.Trim();
+            var separators = new[] {
+                " then ",
+                " and then ",
+                " and ",
+                ",",
+                "，",
+                ";",
+                "；",
+                "。",
+                " 然后",
+                " 并且",
+                " 并 ",
+                " 再"
+            };
+            foreach (var separator in separators) {
+                var idx = cleaned.IndexOf(separator, StringComparison.OrdinalIgnoreCase);
+                if (idx > 0) {
+                    cleaned = cleaned.Substring(0, idx).Trim();
+                    break;
+                }
+            }
+
+            cleaned = cleaned.Trim(' ', '"', '\'', '`', '“', '”', '‘', '’', ',', '，', ';', '；', '.', '。', '!', '！', '?', '？');
+            if (cleaned.StartsWith("到", StringComparison.OrdinalIgnoreCase)) {
+                cleaned = cleaned.Substring(1).Trim();
+            }
+
+            return cleaned;
+        }
+
+        private static bool IsTargetNameUsable(string target) {
+            if (string.IsNullOrWhiteSpace(target)) {
+                return false;
+            }
+
+            if (target.Length > 80) {
+                return false;
+            }
+
+            if (Regex.IsMatch(target, @"(?i)\b(ra|dec)\b")) {
+                return false;
+            }
+
+            // Exclude coordinate-like strings (numbers/symbols only), keep catalog IDs like M31.
+            if (Regex.IsMatch(target, @"^[\d\s\.,:\+\-°'""\u2032\u2033hdms]+$")) {
+                return false;
+            }
+
+            return target.Any(char.IsLetterOrDigit);
         }
 
         private static bool HasAny(string source, params string[] phrases) {

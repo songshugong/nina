@@ -46,6 +46,7 @@ namespace NINA.ViewModel.AI {
             "unpark",
             "home_mount",
             "platesolve",
+            "frame_target",
             "center",
             "slew",
             "tracking_on",
@@ -139,7 +140,7 @@ namespace NINA.ViewModel.AI {
 
             Messages = new ObservableCollection<string>();
             AppendMessage("[system] AI assistant initialized. Planner+executor mode is active.");
-            AppendMessage("[system] Supported: connect, disconnect, status, start_sequence, stop, park, unpark, home_mount, platesolve, center, slew, tracking_on/off, guide_start/stop, cool_camera, warm_camera, dome_open/close, dome_follow_on/off, dome_park/home, flat_light_on/off.");
+            AppendMessage("[system] Supported: connect, disconnect, status, start_sequence, stop, park, unpark, home_mount, platesolve, frame_target, center, slew, tracking_on/off, guide_start/stop, cool_camera, warm_camera, dome_open/close, dome_follow_on/off, dome_park/home, flat_light_on/off.");
             AppendMessage("[system] Input \"help\" to show command hints and JSON examples.");
             AppendMessage("[system] Autonomy monitor available: start_monitor / stop_monitor / monitor_status.");
             AppendMessage("[system] High-risk actions require confirm/cancel (90s window).");
