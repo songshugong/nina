@@ -40,15 +40,15 @@ namespace NINA.ViewModel.AI {
                 return AiControlAction.None;
             }
 
-            if (normalized is "confirm" or "确认") {
+            if (ContainsEnglishWord(normalized, "confirm") || normalized.StartsWith("确认", StringComparison.OrdinalIgnoreCase)) {
                 return AiControlAction.Confirm;
             }
 
-            if (normalized is "cancel" or "取消") {
+            if (ContainsEnglishWord(normalized, "cancel") || normalized.StartsWith("取消", StringComparison.OrdinalIgnoreCase)) {
                 return AiControlAction.Cancel;
             }
 
-            if (normalized is "pending" or "待确认") {
+            if (ContainsEnglishWord(normalized, "pending") || normalized.Contains("待确认", StringComparison.OrdinalIgnoreCase)) {
                 return AiControlAction.Pending;
             }
 
@@ -115,6 +115,29 @@ namespace NINA.ViewModel.AI {
 
         private static string Normalize(string text) {
             return text?.Trim().ToLowerInvariant() ?? string.Empty;
+        }
+
+        private static bool ContainsEnglishWord(string source, string word) {
+            if (string.IsNullOrWhiteSpace(source) || string.IsNullOrWhiteSpace(word)) {
+                return false;
+            }
+
+            var start = 0;
+            while (true) {
+                var index = source.IndexOf(word, start, StringComparison.OrdinalIgnoreCase);
+                if (index < 0) {
+                    return false;
+                }
+
+                var beforeOk = index == 0 || !char.IsLetterOrDigit(source[index - 1]);
+                var endIndex = index + word.Length;
+                var afterOk = endIndex >= source.Length || !char.IsLetterOrDigit(source[endIndex]);
+                if (beforeOk && afterOk) {
+                    return true;
+                }
+
+                start = index + word.Length;
+            }
         }
     }
 }

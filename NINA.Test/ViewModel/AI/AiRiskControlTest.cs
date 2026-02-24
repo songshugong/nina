@@ -13,10 +13,21 @@ namespace NINA.Test.ViewModel.AI {
         [TestCase("取消", AiControlAction.Cancel)]
         [TestCase("pending", AiControlAction.Pending)]
         [TestCase("待确认", AiControlAction.Pending)]
+        [TestCase("please confirm", AiControlAction.Confirm)]
+        [TestCase("确认一下", AiControlAction.Confirm)]
+        [TestCase("cancel now", AiControlAction.Cancel)]
+        [TestCase("查看待确认", AiControlAction.Pending)]
         [TestCase("status", AiControlAction.None)]
         public void ParseControlAction_ShouldMapExpectedAction(string prompt, AiControlAction expected) {
             var result = AiRiskControl.ParseControlAction(prompt);
             result.Should().Be(expected);
+        }
+
+        [Test]
+        public void ParseControlAction_EnglishPartialWord_ShouldNotMatch() {
+            AiRiskControl.ParseControlAction("confirmation").Should().Be(AiControlAction.None);
+            AiRiskControl.ParseControlAction("cancelled").Should().Be(AiControlAction.None);
+            AiRiskControl.ParseControlAction("depending").Should().Be(AiControlAction.None);
         }
 
         [Test]

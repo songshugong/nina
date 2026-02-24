@@ -58,6 +58,7 @@ namespace NINA.ViewModel.AI {
             AppendMessage("[system] Input \"help\" to show command hints and JSON examples.");
             AppendMessage("[system] High-risk actions require confirm/cancel (90s window).");
             AppendMessage("[system] Use \"pending\"/\"待确认\" to inspect queued high-risk actions.");
+            AppendMessage("[system] While pending exists, new high-risk actions are ignored until confirm/cancel.");
             AppendMessage("[system] Override confirmation by adding #force in prompt or confirmed=true in JSON parameters.");
             AppendMessage("[system] Optional LLM bridge: set NINA_AI_API_URL (and optionally NINA_AI_API_KEY, NINA_AI_MODEL).");
             AppendMessage("[system] Audit log: %LocalAppData%/NINA/Logs/ai-assistant-audit.jsonl");
@@ -109,6 +110,7 @@ namespace NINA.ViewModel.AI {
                     return false;
                 }
 
+                var hasExistingPending = pendingCommands.Count > 0;
                 var queuedCommands = new List<AiCommand>();
                 var immediateCommands = new List<AiCommand>();
                 foreach (var command in commands) {
@@ -126,6 +128,14 @@ namespace NINA.ViewModel.AI {
                 }
 
                 if (queuedCommands.Count > 0) {
+                    if (hasExistingPending) {
+                        var ignoredActions = string.Join(", ", queuedCommands.Select(c => c.Action));
+                        AppendMessage("[assistant] Existing pending high-risk request kept. Resolve current pending first.");
+                        AppendMessage("[assistant] New high-risk actions ignored: " + ignoredActions);
+                        Prompt = string.Empty;
+                        return true;
+                    }
+
                     pendingCommands = queuedCommands;
                     pendingSource = plan.Source ?? string.Empty;
                     pendingCreatedAtUtc = DateTimeOffset.UtcNow;
@@ -141,8 +151,14 @@ namespace NINA.ViewModel.AI {
                 }
 
                 if (!executedImmediately) {
-                    AppendMessage("[assistant] No executable command.");
-                    return false;
+                    if (hasExistingPending) {
+                        AppendMessage("[assistant] No immediate command executed. Pending queue is unchanged.");
+                        Prompt = string.Empty;
+                        return true;
+                    } else {
+                        AppendMessage("[assistant] No executable command.");
+                        return false;
+                    }
                 }
 
                 Prompt = string.Empty;
