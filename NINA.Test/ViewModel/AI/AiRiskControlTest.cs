@@ -15,6 +15,7 @@ namespace NINA.Test.ViewModel.AI {
         [TestCase("待确认", AiControlAction.Pending)]
         [TestCase("please confirm", AiControlAction.Confirm)]
         [TestCase("确认一下", AiControlAction.Confirm)]
+        [TestCase("请确认一下", AiControlAction.Confirm)]
         [TestCase("cancel now", AiControlAction.Cancel)]
         [TestCase("查看待确认", AiControlAction.Pending)]
         [TestCase("status", AiControlAction.None)]

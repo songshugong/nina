@@ -40,16 +40,16 @@ namespace NINA.ViewModel.AI {
                 return AiControlAction.None;
             }
 
-            if (ContainsEnglishWord(normalized, "confirm") || normalized.StartsWith("确认", StringComparison.OrdinalIgnoreCase)) {
+            if (ContainsEnglishWord(normalized, "pending") || normalized.Contains("待确认", StringComparison.OrdinalIgnoreCase)) {
+                return AiControlAction.Pending;
+            }
+
+            if (ContainsEnglishWord(normalized, "confirm") || normalized.Contains("确认", StringComparison.OrdinalIgnoreCase)) {
                 return AiControlAction.Confirm;
             }
 
-            if (ContainsEnglishWord(normalized, "cancel") || normalized.StartsWith("取消", StringComparison.OrdinalIgnoreCase)) {
+            if (ContainsEnglishWord(normalized, "cancel") || normalized.Contains("取消", StringComparison.OrdinalIgnoreCase)) {
                 return AiControlAction.Cancel;
-            }
-
-            if (ContainsEnglishWord(normalized, "pending") || normalized.Contains("待确认", StringComparison.OrdinalIgnoreCase)) {
-                return AiControlAction.Pending;
             }
 
             return AiControlAction.None;

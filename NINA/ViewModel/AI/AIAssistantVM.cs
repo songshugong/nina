@@ -98,9 +98,7 @@ namespace NINA.ViewModel.AI {
                     return true;
                 }
 
-                if (pendingCommands.Count > 0) {
-                    ClearPending("Pending high-risk request cleared due to a new prompt.");
-                }
+                ClearPendingIfExpired("Pending high-risk request expired. Issue command again if needed.");
 
                 AppendMessage("[user] " + userPrompt);
                 var plan = await commandPlanner.PlanAsync(userPrompt) ?? new AiCommandPlan();
@@ -177,6 +175,10 @@ namespace NINA.ViewModel.AI {
             AppendMessage("[user] " + promptText);
 
             if (action == AiControlAction.Pending) {
+                if (ClearPendingIfExpired("Pending high-risk request expired. Please issue the command again.")) {
+                    return true;
+                }
+
                 AppendMessage(pendingCommands.Count == 0
                     ? "[assistant] No pending high-risk action."
                     : "[assistant] " + BuildPendingStatusMessage());
@@ -188,8 +190,7 @@ namespace NINA.ViewModel.AI {
                 return true;
             }
 
-            if (DateTimeOffset.UtcNow - pendingCreatedAtUtc > ConfirmationWindow) {
-                ClearPending("Pending high-risk request expired. Please issue the command again.");
+            if (ClearPendingIfExpired("Pending high-risk request expired. Please issue the command again.")) {
                 return true;
             }
 
@@ -232,6 +233,19 @@ namespace NINA.ViewModel.AI {
             pendingSource = string.Empty;
             pendingCreatedAtUtc = default;
             AppendMessage("[assistant] " + reason);
+        }
+
+        private bool ClearPendingIfExpired(string reason) {
+            if (pendingCommands.Count == 0) {
+                return false;
+            }
+
+            if (DateTimeOffset.UtcNow - pendingCreatedAtUtc <= ConfirmationWindow) {
+                return false;
+            }
+
+            ClearPending(reason);
+            return true;
         }
 
         private void AppendMessage(string message) {
