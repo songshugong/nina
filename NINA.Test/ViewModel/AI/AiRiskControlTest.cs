@@ -11,6 +11,8 @@ namespace NINA.Test.ViewModel.AI {
         [TestCase("确认", AiControlAction.Confirm)]
         [TestCase("cancel", AiControlAction.Cancel)]
         [TestCase("取消", AiControlAction.Cancel)]
+        [TestCase("pending", AiControlAction.Pending)]
+        [TestCase("待确认", AiControlAction.Pending)]
         [TestCase("status", AiControlAction.None)]
         public void ParseControlAction_ShouldMapExpectedAction(string prompt, AiControlAction expected) {
             var result = AiRiskControl.ParseControlAction(prompt);

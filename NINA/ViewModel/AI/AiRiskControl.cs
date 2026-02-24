@@ -22,7 +22,8 @@ namespace NINA.ViewModel.AI {
     public enum AiControlAction {
         None,
         Confirm,
-        Cancel
+        Cancel,
+        Pending
     }
 
     public static class AiRiskControl {
@@ -45,6 +46,10 @@ namespace NINA.ViewModel.AI {
 
             if (normalized is "cancel" or "取消") {
                 return AiControlAction.Cancel;
+            }
+
+            if (normalized is "pending" or "待确认") {
+                return AiControlAction.Pending;
             }
 
             return AiControlAction.None;

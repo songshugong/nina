@@ -36,6 +36,7 @@ namespace NINA.ViewModel.AI {
         private IList<AiCommand> pendingCommands = new List<AiCommand>();
         private string pendingSource = string.Empty;
         private DateTimeOffset pendingCreatedAtUtc;
+        private bool isExecuting;
         private string prompt;
 
         public AIAssistantVM(
@@ -56,6 +57,7 @@ namespace NINA.ViewModel.AI {
             AppendMessage("[system] Supported: connect, status, start_sequence, stop, park, unpark, platesolve, center, slew.");
             AppendMessage("[system] Input \"help\" to show command hints and JSON examples.");
             AppendMessage("[system] High-risk actions require confirm/cancel (90s window).");
+            AppendMessage("[system] Use \"pending\"/\"待确认\" to inspect queued high-risk actions.");
             AppendMessage("[system] Override confirmation by adding #force in prompt or confirmed=true in JSON parameters.");
             AppendMessage("[system] Optional LLM bridge: set NINA_AI_API_URL (and optionally NINA_AI_API_KEY, NINA_AI_MODEL).");
             AppendMessage("[system] Audit log: %LocalAppData%/NINA/Logs/ai-assistant-audit.jsonl");
@@ -79,7 +81,7 @@ namespace NINA.ViewModel.AI {
         public ICommand SendPromptCommand => sendPromptCommand;
 
         private bool CanSendPrompt() {
-            return !string.IsNullOrWhiteSpace(Prompt);
+            return !isExecuting && !string.IsNullOrWhiteSpace(Prompt);
         }
 
         private async Task<bool> SendPromptAsync() {
@@ -88,38 +90,43 @@ namespace NINA.ViewModel.AI {
                 return false;
             }
 
-            if (await TryHandleControlPromptAsync(userPrompt)) {
+            SetExecuting(true);
+            try {
+                if (await TryHandleControlPromptAsync(userPrompt)) {
+                    Prompt = string.Empty;
+                    return true;
+                }
+
+                if (pendingCommands.Count > 0) {
+                    ClearPending("Pending high-risk request cleared due to a new prompt.");
+                }
+
+                AppendMessage("[user] " + userPrompt);
+                var plan = await commandPlanner.PlanAsync(userPrompt) ?? new AiCommandPlan();
+                var commands = plan.Commands ?? new List<AiCommand>();
+                if (commands.Count == 0) {
+                    AppendMessage("[assistant] No command parsed.");
+                    return false;
+                }
+
+                if (AiRiskControl.RequiresConfirmation(commands, userPrompt)) {
+                    pendingCommands = commands;
+                    pendingSource = plan.Source ?? string.Empty;
+                    pendingCreatedAtUtc = DateTimeOffset.UtcNow;
+                    var actions = string.Join(", ", commands.Select(c => c.Action));
+                    AppendMessage("[planner] source=" + pendingSource);
+                    AppendMessage("[router] " + actions);
+                    AppendMessage("[assistant][confirm] High-risk actions queued. Type \"confirm\"/\"确认\" within 90s to execute, \"pending\"/\"待确认\" to inspect, or \"cancel\"/\"取消\".");
+                    Prompt = string.Empty;
+                    return true;
+                }
+
+                await ExecuteCommandsAsync(commands, plan.Source ?? string.Empty);
                 Prompt = string.Empty;
                 return true;
+            } finally {
+                SetExecuting(false);
             }
-
-            if (pendingCommands.Count > 0) {
-                ClearPending("Pending high-risk request cleared due to a new prompt.");
-            }
-
-            AppendMessage("[user] " + userPrompt);
-            var plan = await commandPlanner.PlanAsync(userPrompt) ?? new AiCommandPlan();
-            var commands = plan.Commands ?? new List<AiCommand>();
-            if (commands.Count == 0) {
-                AppendMessage("[assistant] No command parsed.");
-                return false;
-            }
-
-            if (AiRiskControl.RequiresConfirmation(commands, userPrompt)) {
-                pendingCommands = commands;
-                pendingSource = plan.Source ?? string.Empty;
-                pendingCreatedAtUtc = DateTimeOffset.UtcNow;
-                var actions = string.Join(", ", commands.Select(c => c.Action));
-                AppendMessage("[planner] source=" + pendingSource);
-                AppendMessage("[router] " + actions);
-                AppendMessage("[assistant][confirm] High-risk actions queued. Type \"confirm\"/\"确认\" within 90s to execute, or \"cancel\"/\"取消\".");
-                Prompt = string.Empty;
-                return true;
-            }
-
-            await ExecuteCommandsAsync(commands, plan.Source ?? string.Empty);
-            Prompt = string.Empty;
-            return true;
         }
 
         private async Task<bool> TryHandleControlPromptAsync(string promptText) {
@@ -129,6 +136,14 @@ namespace NINA.ViewModel.AI {
             }
 
             AppendMessage("[user] " + promptText);
+
+            if (action == AiControlAction.Pending) {
+                AppendMessage(pendingCommands.Count == 0
+                    ? "[assistant] No pending high-risk action."
+                    : "[assistant] " + BuildPendingStatusMessage());
+                return true;
+            }
+
             if (pendingCommands.Count == 0) {
                 AppendMessage("[assistant] No pending high-risk action.");
                 return true;
@@ -155,6 +170,14 @@ namespace NINA.ViewModel.AI {
             return true;
         }
 
+        private string BuildPendingStatusMessage() {
+            var actions = string.Join(", ", pendingCommands.Select(c => c.Action));
+            var elapsed = DateTimeOffset.UtcNow - pendingCreatedAtUtc;
+            var remaining = ConfirmationWindow - elapsed;
+            var remainingSeconds = Math.Max(0, (int)Math.Ceiling(remaining.TotalSeconds));
+            return $"Pending actions: {actions}. Source={pendingSource}. Expires in {remainingSeconds}s.";
+        }
+
         private async Task ExecuteCommandsAsync(IList<AiCommand> commands, string source) {
             AppendMessage("[planner] source=" + source);
             AppendMessage("[router] " + string.Join(", ", commands.Select(c => c.Action)));
@@ -177,6 +200,15 @@ namespace NINA.ViewModel.AI {
                 Messages.RemoveAt(0);
             }
             Messages.Add(message);
+        }
+
+        private void SetExecuting(bool value) {
+            if (isExecuting == value) {
+                return;
+            }
+
+            isExecuting = value;
+            CommandManager.InvalidateRequerySuggested();
         }
     }
 }

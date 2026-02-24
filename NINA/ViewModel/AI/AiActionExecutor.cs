@@ -99,7 +99,7 @@ namespace NINA.ViewModel.AI {
             try {
                 switch (command.Action.ToLowerInvariant()) {
                     case "help":
-                        result = Ok("Supported: connect, status, start_sequence, stop, park, unpark, platesolve, center, slew. JSON example: {\"action\":\"slew\",\"parameters\":{\"ra\":\"5.5\",\"dec\":\"-2.1\",\"ra_unit\":\"hours\",\"confirmed\":\"true\"}}. High-risk actions require confirm/cancel unless overridden.");
+                        result = Ok("Supported: connect, status, start_sequence, stop, park, unpark, platesolve, center, slew. Control: confirm, cancel, pending. JSON example: {\"action\":\"slew\",\"parameters\":{\"ra\":\"5.5\",\"dec\":\"-2.1\",\"ra_unit\":\"hours\",\"confirmed\":\"true\"}}. High-risk actions require confirm/cancel unless overridden.");
                         break;
 
                     case "connect":
