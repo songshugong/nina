@@ -214,15 +214,16 @@ namespace NINA.PlateSolving.Solvers {
             try {
                 using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken)) {
                     cts.CancelAfter(TimeSpan.FromMinutes(10));
+                    var timeoutToken = cts.Token;
 
                     progress.Report(new ApplicationStatus() { Status = "Authenticating to Astrometery.net..." });
-                    var session = await GetAuthenticationToken(cancelToken);
+                    var session = await GetAuthenticationToken(timeoutToken);
 
                     progress.Report(new ApplicationStatus() { Status = "Uploading image to Astrometry.net..." });
-                    var jobId = await SubmitImageJob(progress, source, session, cancelToken);
+                    var jobId = await SubmitImageJob(progress, source, session, timeoutToken);
 
                     progress.Report(new ApplicationStatus() { Status = $"Getting result for Astrometry.net job {jobId}..." });
-                    Calibration jobinfo = await GetJobResult(jobId, cancelToken);
+                    Calibration jobinfo = await GetJobResult(jobId, timeoutToken);
 
                     /* The orientation is mirrored on the x-axis */
                     result.Flipped = jobinfo.parity < 0;
