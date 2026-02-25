@@ -1,0 +1,204 @@
+<!--
+    Copyright (c) 2016 - 2026 Stefan Berg <isbeorn86+NINA@googlemail.com> and the N.I.N.A. contributors
+
+    This file is part of N.I.N.A. - Nighttime Imaging 'N' Astronomy.
+
+    This Source Code Form is subject to the terms of the Mozilla Public
+    License, v. 2.0. If a copy of the MPL was not distributed with this
+    file, You can obtain one at http://mozilla.org/MPL/2.0/.-->
+<UserControl
+    x:Class="NINA.View.AnchorableAIAssistantView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    mc:Ignorable="d">
+    <Grid Margin="6">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border
+            Margin="0,0,0,6"
+            Padding="8"
+            Background="{StaticResource SecondaryBackgroundBrush}"
+            BorderBrush="{StaticResource BorderBrush}"
+            BorderThickness="1">
+            <StackPanel>
+                <TextBlock FontSize="14" FontWeight="SemiBold" Text="AI Observatory Console" />
+                <TextBlock Margin="0,4,0,0" Opacity="0.85" Text="{Binding ProjectPhase}" TextWrapping="Wrap" />
+                <TextBlock Margin="0,2,0,0" Opacity="0.85" Text="{Binding CapabilitySummary}" TextWrapping="Wrap" />
+                <TextBlock Margin="0,2,0,0" Opacity="0.85" Text="{Binding AutonomyStatus}" TextWrapping="Wrap" />
+                <TextBlock Margin="0,2,0,0" FontSize="11" Opacity="0.75" Text="{Binding AutonomyLastReason}" TextWrapping="Wrap" />
+
+                <Grid Margin="0,8,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+
+                    <Border
+                        Grid.Column="0"
+                        Margin="0,0,4,0"
+                        Padding="6"
+                        Background="{StaticResource SecondaryBackgroundBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Opacity="0.75" Text="Supported Actions" />
+                            <TextBlock FontSize="18" FontWeight="Bold" Text="{Binding SupportedActionCount}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border
+                        Grid.Column="1"
+                        Margin="4,0,4,0"
+                        Padding="6"
+                        Background="{StaticResource SecondaryBackgroundBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Opacity="0.75" Text="High-Risk Actions" />
+                            <TextBlock FontSize="18" FontWeight="Bold" Text="{Binding HighRiskActionCount}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border
+                        Grid.Column="2"
+                        Margin="4,0,4,0"
+                        Padding="6"
+                        Background="{StaticResource SecondaryBackgroundBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Opacity="0.75" Text="Pending Queue" />
+                            <TextBlock FontSize="18" FontWeight="Bold" Text="{Binding PendingActionCount}" />
+                            <TextBlock
+                                Margin="0,2,0,0"
+                                FontSize="11"
+                                Opacity="0.75"
+                                Text="{Binding PendingSummary}"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border
+                        Grid.Column="3"
+                        Margin="4,0,0,0"
+                        Padding="6"
+                        Background="{StaticResource SecondaryBackgroundBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Opacity="0.75" Text="Last Update" />
+                            <TextBlock FontSize="14" FontWeight="SemiBold" Text="{Binding LastUpdated}" />
+                            <TextBlock
+                                Margin="0,2,0,0"
+                                FontSize="11"
+                                Opacity="0.75"
+                                Text="{Binding LastExecutionSummary}"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <TextBlock Margin="0,6,0,0" FontSize="11" Opacity="0.75" Text="{Binding AuditLogPath}" TextWrapping="Wrap" />
+                <TextBlock Margin="0,2,0,0" FontSize="11" Opacity="0.75" Text="{Binding KnowledgeBasePath}" TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <Border
+            Grid.Row="1"
+            Margin="0,0,0,6"
+            Padding="6"
+            Background="{StaticResource SecondaryBackgroundBrush}"
+            BorderBrush="{StaticResource BorderBrush}"
+            BorderThickness="1">
+            <WrapPanel>
+                <Button
+                    Margin="0,0,6,0"
+                    Command="{Binding RunQuickToolCommand}"
+                    CommandParameter="project_overview"
+                    MinWidth="120">
+                    <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="Project Overview" />
+                </Button>
+                <Button
+                    Margin="0,0,6,0"
+                    Command="{Binding RunQuickToolCommand}"
+                    CommandParameter="status"
+                    MinWidth="90">
+                    <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="Status" />
+                </Button>
+                <Button
+                    Margin="0,0,6,0"
+                    Command="{Binding RunQuickToolCommand}"
+                    CommandParameter="pending"
+                    MinWidth="90">
+                    <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="Pending" />
+                </Button>
+                <Button
+                    Command="{Binding RunQuickToolCommand}"
+                    CommandParameter="help"
+                    MinWidth="90">
+                    <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="Help" />
+                </Button>
+                <Button
+                    Margin="6,0,6,0"
+                    Command="{Binding RunQuickToolCommand}"
+                    CommandParameter="monitor_start"
+                    MinWidth="110">
+                    <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="Start Monitor" />
+                </Button>
+                <Button
+                    Margin="0,0,6,0"
+                    Command="{Binding RunQuickToolCommand}"
+                    CommandParameter="monitor_stop"
+                    MinWidth="110">
+                    <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="Stop Monitor" />
+                </Button>
+                <Button
+                    Command="{Binding RunQuickToolCommand}"
+                    CommandParameter="monitor_status"
+                    MinWidth="110">
+                    <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="Monitor Status" />
+                </Button>
+            </WrapPanel>
+        </Border>
+
+        <ListBox
+            Grid.Row="2"
+            Margin="0,0,0,6"
+            ItemsSource="{Binding Messages}">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Margin="4,2,4,2" Text="{Binding}" TextWrapping="Wrap" />
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox
+                Margin="0,0,6,0"
+                KeyDown="PromptTextBox_OnKeyDown"
+                VerticalContentAlignment="Center"
+                Text="{Binding Prompt, UpdateSourceTrigger=PropertyChanged}" />
+            <Button
+                Grid.Column="1"
+                Command="{Binding SendPromptCommand}"
+                MinWidth="80">
+                <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="Send" />
+            </Button>
+        </Grid>
+    </Grid>
+</UserControl>

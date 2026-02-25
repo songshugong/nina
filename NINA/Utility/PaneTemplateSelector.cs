@@ -1,6 +1,6 @@
 #region "copyright"
 /*
-    Copyright © 2016 - 2026 Stefan Berg <isbeorn86+NINA@googlemail.com> and the N.I.N.A. contributors 
+    Copyright © 2016 - 2024 Stefan Berg <isbeorn86+NINA@googlemail.com> and the N.I.N.A. contributors 
 
     This file is part of N.I.N.A. - Nighttime Imaging 'N' Astronomy.
 
@@ -23,6 +23,7 @@ using NINA.WPF.Base.ViewModel.Equipment.Telescope;
 using NINA.WPF.Base.ViewModel.Equipment.WeatherData;
 using NINA.ViewModel.ImageHistory;
 using NINA.ViewModel.Imaging;
+using NINA.ViewModel.AI;
 using NINA.ViewModel.Sequencer;
 using System.Windows;
 using System.Windows.Controls;
@@ -73,6 +74,7 @@ namespace NINA.Utility.AvalonDock {
 
         public DataTemplate SwitchTemplate { get; set; }
         public DataTemplate FlatDeviceTemplate { get; set; }
+        public DataTemplate AIAssistantTemplate { get; set; }
 
         public DataTemplate DomeTemplate { get; set; }
 
@@ -140,6 +142,9 @@ namespace NINA.Utility.AvalonDock {
 
                 case SafetyMonitorVM _:
                     return SafetyMonitorTemplate;
+
+                case AIAssistantVM _:
+                    return AIAssistantTemplate;
 
                 default:
                     var templateKey = item.GetType().FullName + "_Dockable";

@@ -3,20 +3,7 @@
 If N.I.N.A. helps you on your journey to capture amazing deep sky images, please consider a donation. Every contribution helps keep the project alive and active.  
 More details at <a href="https://nighttime-imaging.eu/donate/" target="_blank">nighttime-imaging.eu/donate/</a>
 
-### <span style="color:orange;">Nightly Build: USE WITH CAUTION</span>
-### <span style="color:orange;">
-Nightly builds are preview versions containing active development work.
-
-They may be unstable and change frequently.
-Running outdated nightly builds is strongly discouraged.
-
-Before using nightly builds, consider backing up your profiles located at:
-%localappdata%\NINA
-
-This allows you to safely return to a stable release if needed.
-</span>
-
-# Version 3.3 NIGHTLY
+# Version 3.3
 
 ## General
 - The application now runs on .NET 10, bringing performance improvements and access to the latest runtime features.
@@ -31,81 +18,24 @@ This allows you to safely return to a stable release if needed.
     - new Trend per Filter checkbox to consider HFR Trend per filter (default) or across all filters to earlier trigger autofocus runs when imaging with continues filter loops 
 - When a safety monitor is connected and is reporting unsafe conditions, the imaging related core triggers will no longer fire as the conditions aren't safe anyways to execute them.
     - In case the meridian should trigger in this scenario, it will stop mount tracking instead to ensure there will be no pier collision. Safety related logic in a sequence needs to handle resuming tracking once it's safe again.
-- **Additional manual focus targets**
-    - 160 stars have been added to the manual focus target list to cover more stars of different magnitudes across the sky
-- Filterwheels will now poll in the background their position in case the wheel is moved by another client. This ensures that N.I.N.A. always has the correct filter position even when the wheel was moved outside of N.I.N.A.
-- Enhanced sequencer exit handling to more reliably detect actual changes and prevent false-positive change prompts.
-- Clicking on slew Alt/Az in the Mount equipment page with Mount drivers that do not support slewing to Alt/Az, will now fallback to slewing to RA/Dec coordinates instead of doing nothing.
-- The manual focuser step buttons now use configurable multipliers. Users can adjust the small step (default 0.5x) and large step (default 5.0x) multipliers in Options > Imaging > Autofocus.
-- Debayer algorithm has been optimized to work fast even on older CPUs
-- Sky brightness readings in the Weather device windows have been increased from 2 decimal places to 5 so that measurements obtained in low light conditions are adequately displayed.
-
-## Behavioral Changes
-- Unparking the mount no longer automatically starts sidereal tracking. Tracking will begin automatically during a slew to a target, as usual.
-  - This change only affects mount drivers that previously started tracking immediately upon unparking; drivers that did not exhibit this behavior are unaffected.
-  - Preventing automatic tracking on unpark avoids unexpected mount movement and reduces the risk of pier collisions or other unintended motion, while ensuring consistent and predictable behavior across drivers.
 
 ## Features
 
-### **Sequencer Expressions**
-- **Expression support for sequence items**
-  - Many sequence item parameters can now optionally use expressions instead of fixed values.
-  - Expressions can reference live data such as device state, weather conditions, image statistics, and time-based values as well as user-defined constants and variables.
-  - Simple numeric values continue to work exactly as before.
-  - This brings the core functionality previously available via the **Sequencer Powerups** plugin directly into N.I.N.A.
-
-- **Expression editor with symbol and function sidebar**
-  - A new sidebar is available when editing expression-enabled fields.
-  - Displays all currently available **symbols**, grouped by category (e.g. mount, camera, weather, image data).
-  - Lists all supported **functions** (math, logic, time, string, and utility helpers).
-  - Users familiar with the **Sequencer Powerups** plugin will recognize the workflow and capabilities.
-
-- **Built-in expression functions**
-  - Includes common mathematical operations, logical and conditional helpers, time-based functions, and string utilities.
-  - Functions can be freely combined with symbols to build complex expressions.
-
-- **Seamless migration and backward compatibility**
-  - Existing sequences continue to work without any changes.
-  - Expression support is opt-in per field; fields that do not use expressions behave exactly as before.
-  - When loading older sequences, existing values are preserved and automatically interpreted as simple expressions.
-
-- **Plugin support (opt-in)**
-  - Expression support for plugin-provided sequence items is **opt-in** and requires plugin updates.
-  - Plugins must explicitly adopt the new expression system to expose expression-enabled fields.
-  - Plugins that are not updated continue to function normally, but their sequence items will not offer expression support.
+### Fork-Specific: AI Assistant Operation Scope Expansion
+- Added new AI actions for broader observatory control:
+  - `home_mount`
+  - `dome_open`, `dome_close`, `dome_follow_on`, `dome_follow_off`, `dome_park`, `dome_home`
+  - `flat_light_on`, `flat_light_off`
+- Expanded AI command routing (EN + ZH keywords), planner allowlist, and OpenAI-compatible translator action whitelist to include the new operations.
+- Added execution guards and capability checks for mount, dome, and flat panel actions (connection and feature support validation).
+- Updated high-risk confirmation policy to include `home_mount`, `dome_open`, `dome_close`, and `dome_park`.
+- Added/updated AI tests for new routing behavior, planner filtering, and risk control coverage.
 
 ### **Device Management**
 - **ASCOM Alpaca Direct Drivers**
     - In case your ASCOM Alpaca specific device has a static IP or doesn't offer Alpaca Discovery a new static entry is available for each device type to pick from where you can specify the address to connect to instead of having to rely on discovery
 - **Altair, Mallincam, Ogma, Omegon, Risingcam, SvBony and ToupTek Filterwheel Native Driver**
   - The ToupTek based filter wheels are now available as a native driver.
-  - The ToupTek based focusers are now available as a native driver.
-- **Oasis Focuser Native Driver**
-  - The Oasis focuser is now available as a native driver.
-- **Oasis Filter Wheel Native Driver**
-  - The Oasis filter wheel is now available as a native driver.
-- **PlayerOne FilterWheel**
-  - Added setting to change unidirectional mode
-  - While connecting the app will wait for the filter wheel homing to finish before proceeding
-- **Moravian Instruments Cameras and Integrated Filter Wheels**
-  - Added native drivers for Moravian Instruments cameras and integrated filter wheels
-
-### **User Interface & Usability**
-- **Sky Atlas Improvements**  
-  - Deep sky objects can now be filtered and sorted by their upper transit time
-- **Framing Assistant Improvements** 
-  - In HiPS 2 FITS Sky Survey different HiPS sky maps can now be selected like CTA-FRAM, Mellinger, Northern Sky Narrowband Survey and more for better target planning.
-  - Toogle Catalogue Display: visibility of individual catalogues is no stored in settings and a new "show all catalogues" toogle been added   
-- **New Toast Notification System**
-  - Replaced the external ToastNotifications package with a fully native WPF implementation.
-  - Improved reliability, lifetime handling, and positioning across multiple monitors.
-  - Added configurable notification placement: primary screen, same screen as the app, or application window, as well as adjustable corner positioning via Options > General > Advanced.
-  - Notifications now reposition automatically on window moves, DPI changes, and display configuration changes.
-
-### File formats
-- **XISF ZStandard Compression**
-  - Added support for ZStandard compression in XISF files.
-
 
 # Version 3.2
 

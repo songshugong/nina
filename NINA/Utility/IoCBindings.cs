@@ -1,7 +1,7 @@
 ﻿#region "copyright"
 
 /*
-    Copyright © 2016 - 2026 Stefan Berg <isbeorn86+NINA@googlemail.com> and the N.I.N.A. contributors
+    Copyright © 2016 - 2024 Stefan Berg <isbeorn86+NINA@googlemail.com> and the N.I.N.A. contributors
 
     This file is part of N.I.N.A. - Nighttime Imaging 'N' Astronomy.
 
@@ -43,7 +43,6 @@ using NINA.Plugin.Messaging;
 using NINA.Profile;
 using NINA.Profile.Interfaces;
 using NINA.Sequencer.Interfaces.Mediator;
-using NINA.Sequencer.Logic;
 using NINA.Sequencer.Mediator;
 using NINA.ViewModel;
 using NINA.ViewModel.FlatWizard;
@@ -51,6 +50,7 @@ using NINA.ViewModel.FramingAssistant;
 using NINA.ViewModel.ImageHistory;
 using NINA.ViewModel.Imaging;
 using NINA.ViewModel.Interfaces;
+using NINA.ViewModel.AI;
 using NINA.ViewModel.Plugins;
 using NINA.ViewModel.Sequencer;
 using NINA.WPF.Base.Interfaces;
@@ -98,8 +98,6 @@ namespace NINA.Utility {
                 services.AddSingleton<ICommandLineOptions>(f => _commandLineArguments);
 
                 services.AddSingleton<IMessageBroker, MessageBroker>();
-                
-                services.AddSingleton<ISymbolBroker, SymbolBroker>();
 
                 services.AddTransient<IUsbDeviceWatcher, UsbDeviceWatcher>();
 
@@ -248,6 +246,14 @@ namespace NINA.Utility {
                 services.AddSingleton<IFocusTargetsVM, FocusTargetsVM>();
                 services.AddSingleton<IAutoFocusToolVM, AutoFocusToolVM>();
                 services.AddSingleton<IThumbnailVM, ThumbnailVM>();
+                services.AddSingleton<IAiCommandRouter, AiCommandRouter>();
+                services.AddSingleton<IAiPromptTranslator, OpenAiCompatiblePromptTranslator>();
+                services.AddSingleton<IAiCommandPlanner, AiCommandPlanner>();
+                services.AddSingleton<IAiRuntimeContextProvider, AiRuntimeContextProvider>();
+                services.AddSingleton<IAiKnowledgeBase, AiLocalKnowledgeBase>();
+                services.AddSingleton<IAiAuditLogWriter, AiAuditLogWriter>();
+                services.AddSingleton<IAiActionExecutor, AiActionExecutor>();
+                services.AddSingleton<IAIAssistantVM, AIAssistantVM>();
                 services.AddSingleton<IDockManagerVM, DockManagerVM>();
                 services.AddSingleton<IApplicationStatusVM, ApplicationStatusVM>();
                 services.AddSingleton<IVersionCheckVM, VersionCheckVM>();
@@ -328,8 +334,7 @@ namespace NINA.Utility {
                     f.GetService<IFlatDeviceMediator>(), f.GetService<IImageGeometryProvider>(), f.GetService<IApplicationStatusMediator>(), f.GetService<IMyMessageBoxVM>(),
                     f.GetService<INighttimeCalculator>(),
                     f.GetService<ITwilightCalculator>(),
-                    f.GetService<IImageSaveMediator>(),
-                    f.GetService<ISymbolBroker>()));
+                    f.GetService<IImageSaveMediator>()));
 
                 services.AddSingleton<IImageSaveController, ImageSaveController>();
                 services.AddSingleton<ISequenceNavigationVM, SequenceNavigationVM>();
