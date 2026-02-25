@@ -39,6 +39,7 @@ namespace NINA.Profile {
             blindFailoverEnabled = true;
             astrometryURL = "http://nova.astrometry.net";
             astrometryAPIKey = string.Empty;
+            astrometryUseTextUpload = false;
             cygwinLocation = string.Empty;
             searchRadius = 30;
             pS2Location = string.Empty;
@@ -131,6 +132,19 @@ namespace NINA.Profile {
 
                 if (astrometryAPIKey != key) {
                     astrometryAPIKey = key;
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private bool astrometryUseTextUpload;
+
+        [DataMember]
+        public bool AstrometryUseTextUpload {
+            get => astrometryUseTextUpload;
+            set {
+                if (astrometryUseTextUpload != value) {
+                    astrometryUseTextUpload = value;
                     RaisePropertyChanged();
                 }
             }

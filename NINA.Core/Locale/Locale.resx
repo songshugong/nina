@@ -279,6 +279,9 @@ Should the Application try to recover from the error? (Can lead to unexpected be
   <data name="LblAstrometryNet" xml:space="preserve">
     <value>Astrometry.Net</value>
   </data>
+  <data name="LblAstrometryUseTextUpload" xml:space="preserve">
+    <value>Use text upload mode</value>
+  </data>
   <data name="LblAutoFocus" xml:space="preserve">
     <value>Auto Focus</value>
   </data>
@@ -7313,6 +7316,43 @@ CODE: {1}</value>
   <data name="LblAstrometryNetSolveFailed" xml:space="preserve">
     <value>Error plate solving with Astrometry.net. {0}</value>
     <comment>Parameters: {0}=error message</comment>
+  </data>
+  <data name="LblAstrometryNetStatusAuthenticating" xml:space="preserve">
+    <value>Authenticating to Astrometry.net...</value>
+  </data>
+  <data name="LblAstrometryNetStatusDetectingStars" xml:space="preserve">
+    <value>Detecting stars for Astrometry.net text upload...</value>
+  </data>
+  <data name="LblAstrometryNetStatusUploadingStars" xml:space="preserve">
+    <value>Uploading {0} detected stars to Astrometry.net...</value>
+    <comment>Parameters: {0}=number of stars</comment>
+  </data>
+  <data name="LblAstrometryNetStatusWaitingForSubmission" xml:space="preserve">
+    <value>Waiting for Astrometry.net submission {0}...</value>
+    <comment>Parameters: {0}=submission id</comment>
+  </data>
+  <data name="LblAstrometryNetStatusGettingResult" xml:space="preserve">
+    <value>Getting result for Astrometry.net job {0}...</value>
+    <comment>Parameters: {0}=job id</comment>
+  </data>
+  <data name="LblAstrometryNetInvalidResponse" xml:space="preserve">
+    <value>Astrometry.net returned an invalid {0} response.</value>
+    <comment>Parameters: {0}=response context</comment>
+  </data>
+  <data name="LblAstrometryNetSubmissionTimeout" xml:space="preserve">
+    <value>Astrometry.net submission {0} timed out before a job was created.</value>
+    <comment>Parameters: {0}=submission id</comment>
+  </data>
+  <data name="LblAstrometryNetJobTimeout" xml:space="preserve">
+    <value>Astrometry.net job {0} timed out before completion.</value>
+    <comment>Parameters: {0}=job id</comment>
+  </data>
+  <data name="LblAstrometryNetNoStarsDetected" xml:space="preserve">
+    <value>No stars were detected for Astrometry.net text upload.</value>
+  </data>
+  <data name="LblAstrometryNetNotEnoughStars" xml:space="preserve">
+    <value>Astrometry.net text upload requires at least {0} stars, but only {1} were detected.</value>
+    <comment>Parameters: {0}=minimum stars, {1}=detected stars</comment>
   </data>
   <data name="LblExposureOverMax" xml:space="preserve">
     <value>The predicted exposure of {0}s is longer than the maximum allowed.

@@ -309,6 +309,20 @@
                                 VerticalAlignment="Center"
                                 Text="{Binding AstrometryURL}" />
                         </Grid>
+                        <Grid Margin="0,6,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="Astrometry_Label" />
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="AstrometryQuestion_Label" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock VerticalAlignment="Center" Text="{ns:Loc LblAstrometryUseTextUpload}" />
+                            <CheckBox
+                                Grid.Column="1"
+                                Margin="5,0,0,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                IsChecked="{Binding AstrometryUseTextUpload}" />
+                        </Grid>
 
                         <StackPanel MaxHeight="150" Margin="0,15,0,6">
                             <TextBlock Text="{ns:Loc LblPlatesolveProvidedBy}" />

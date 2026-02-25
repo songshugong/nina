@@ -20,6 +20,7 @@ namespace NINA.Profile.Interfaces {
     public interface IPlateSolveSettings : ISettings {
         string AstrometryURL { get; set; }
         string AstrometryAPIKey { get; set; }
+        bool AstrometryUseTextUpload { get; set; }
         BlindSolverEnum BlindSolverType { get; set; }
         string CygwinLocation { get; set; }
         double ExposureTime { get; set; }
